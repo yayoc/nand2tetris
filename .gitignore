@@ -1,2 +1,20 @@
 .DS_Store
+.vscode
+
+# Ignore the build folder
+build/
+
+# Ignore CMakeFiles
+CMakeFiles/
+*.cmake
+
+# Ignore generated Makefiles
+Makefile
+
+# Ignore compiled binaries and executables
+*.o
+*.exe
 *.out
+*.a
+*.so
+*.dll
