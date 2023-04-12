@@ -176,6 +176,32 @@ std::string CodeWriter::symbol(std::string segment, int index)
     {
         return filename_ + "." + std::to_string(index);
     }
+
+    if (segment == "local")
+    {
+        return "LCL";
+    }
+
+    if (segment == "argument")
+    {
+        return "ARG";
+    }
+
+    if (segment == "this")
+    {
+        return "THIS";
+    }
+
+    if (segment == "that")
+    {
+        return "THAT";
+    }
+
+    if (segment == "temp")
+    {
+        return "R" + std::to_string(5 + index);
+    }
+
     return "";
 }
 
@@ -205,9 +231,38 @@ void CodeWriter::writePushPop(std::string command, std::string segment, int inde
             output_ << "@SP" << std::endl;
             output_ << "M=M+1" << std::endl;
         }
+        if (segment == "local" || segment == "argument" || segment == "this" || segment == "that" || segment == "temp")
+        {
+            // @LCL
+            // A=M+index
+            // D=M
+            // @SP
+            // A=M
+            // M=D
+            // @SP
+            // M=M+1
+            output_ << "@" + s << std::endl;
+            if (segment != "temp")
+            {
+                output_ << "A=M" << std::endl;
+                for (int i = 0; i < index; i++)
+                {
+                    output_ << "A=A+1" << std::endl;
+                }
+            }
+            output_ << R"(
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+)";
+        }
     }
     if (command == "pop")
     {
+
         /*
             // SP--
             @SP
@@ -222,13 +277,19 @@ void CodeWriter::writePushPop(std::string command, std::string segment, int inde
         output_ << R"(
             @SP
             M=M-1
+            A=M
             D=M
         )";
         output_ << "@" + s << std::endl;
-        output_ << R"(
-            A=M
-            M=D
-        )";
+        if (segment != "temp")
+        {
+            output_ << "A=M" << std::endl;
+            for (int i = 0; i < index; i++)
+            {
+                output_ << "A=A+1" << std::endl;
+            }
+        }
+        output_ << "M=D" << std::endl;
     }
 }
 
