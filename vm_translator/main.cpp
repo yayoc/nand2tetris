@@ -68,16 +68,10 @@ int main(int argc, char *argv[])
         }
         else if (type == C_PUSH)
         {
-            std::cout << "push" << std::endl;
-            std::cout << parser.arg1() << std::endl;
-            std::cout << parser.arg2() << std::endl;
             writer.writePushPop("push", parser.arg1(), parser.arg2());
         }
         else if (type == C_POP)
         {
-            std::cout << "pop" << std::endl;
-            std::cout << parser.arg1() << std::endl;
-            std::cout << parser.arg2() << std::endl;
             writer.writePushPop("pop", parser.arg1(), parser.arg2());
         }
         parser.advance();

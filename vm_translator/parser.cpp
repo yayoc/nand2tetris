@@ -1,6 +1,7 @@
 #include "parser.h"
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 
 std::string Parser::currentLine()
 {
@@ -46,7 +47,10 @@ CommandType Parser::commandType()
 {
     std::string line = currentLine();
 
-    if (line == "add")
+    static const std::unordered_set<std::string> arithmeticCommands = {
+        "add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"};
+
+    if (arithmeticCommands.find(line) != arithmeticCommands.end())
     {
         return C_ARITHMETIC;
     }
