@@ -183,32 +183,37 @@ std::string CodeWriter::symbol(std::string segment, int index)
 {
     if (segment == "static")
     {
-        return filename_ + "." + std::to_string(index);
+        return "@" + filename_ + "." + std::to_string(index);
+    }
+
+    if (segment == "constant")
+    {
+        return "@" + std::to_string(index);
     }
 
     if (segment == "local")
     {
-        return "LCL";
+        return "@LCL";
     }
 
     if (segment == "argument")
     {
-        return "ARG";
+        return "@ARG";
     }
 
     if (segment == "this")
     {
-        return "THIS";
+        return "@THIS";
     }
 
     if (segment == "that")
     {
-        return "THAT";
+        return "@THAT";
     }
 
     if (segment == "temp")
     {
-        return "R" + std::to_string(5 + index);
+        return "@R" + std::to_string(5 + index);
     }
 
     return "";
@@ -231,13 +236,13 @@ void CodeWriter::translatePush(std::string command, std::string segment, int ind
     std::string s = symbol(segment, index);
     if (segment == "constant")
     {
-        output_ << "@" + std::to_string(index) << std::endl;
+        output_ << s << std::endl;
         output_ << "D=A" << std::endl;
         output_ << PUSH << std::endl;
     }
     if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
     {
-        output_ << "@" + s << std::endl;
+        output_ << s << std::endl;
         output_ << "A=M" << std::endl;
         for (int i = 0; i < index; i++)
         {
@@ -248,7 +253,7 @@ void CodeWriter::translatePush(std::string command, std::string segment, int ind
     }
     if (segment == "temp")
     {
-        output_ << "@" + s << std::endl;
+        output_ << s << std::endl;
         output_ << "D=M" << std::endl;
         output_ << PUSH << std::endl;
     }
@@ -263,8 +268,8 @@ void CodeWriter::translatePop(std::string command, std::string segment, int inde
             A=M
             D=M
         )";
-    output_ << "@" + s << std::endl;
-    if (segment != "temp")
+    output_ << s << std::endl;
+    if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
     {
         output_ << "A=M" << std::endl;
         for (int i = 0; i < index; i++)
