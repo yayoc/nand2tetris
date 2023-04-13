@@ -240,6 +240,12 @@ void CodeWriter::translatePush(std::string command, std::string segment, int ind
         output_ << "D=A" << std::endl;
         output_ << PUSH << std::endl;
     }
+    if (segment == "static")
+    {
+        output_ << s << std::endl;
+        output_ << "D=M" << std::endl;
+        output_ << PUSH << std::endl;
+    }
     if (segment == "pointer")
     {
         // THIS
@@ -284,6 +290,17 @@ void CodeWriter::translatePop(std::string command, std::string segment, int inde
 {
     std::string s = symbol(segment, index);
     if (segment == "constant")
+    {
+        output_ << R"(
+            @SP
+            M=M-1
+            A=M
+            D=M
+        )";
+        output_ << s << std::endl;
+        output_ << "M=D" << std::endl;
+    }
+    if (segment == "static")
     {
         output_ << R"(
             @SP
