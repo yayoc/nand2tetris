@@ -11,9 +11,12 @@ private:
     static std::string OR;
     static std::string NEG;
     static std::string NOT;
+    static std::string PUSH;
+
     std::ofstream &output_;
     std::string filename_;
     int i_;
+
     void writeXPlusYToD();
     void writeXMinusYToD();
     void writeIncrementSP();
@@ -22,6 +25,8 @@ private:
     void writeTrueI();
     void writeFalseI();
     std::string symbol(std::string segment, int index);
+    void translatePush(std::string command, std::string segment, int index);
+    void translatePop(std::string command, std::string segment, int index);
 
 public:
     CodeWriter(std::ofstream &output, std::string filename);

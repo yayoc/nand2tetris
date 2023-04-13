@@ -49,6 +49,15 @@ A=M-1
 M=!M
 )";
 
+// *SP=D, SP++
+std::string CodeWriter::PUSH = R"(
+@SP
+A=M
+M=D
+@SP
+M=M+1
+)";
+
 void CodeWriter::writeArithmetic(std::string command)
 {
     std::string a;
@@ -207,90 +216,63 @@ std::string CodeWriter::symbol(std::string segment, int index)
 
 void CodeWriter::writePushPop(std::string command, std::string segment, int index)
 {
-    std::string s = symbol(segment, index);
     if (command == "push")
     {
-        if (segment == "constant")
-        {
-            /*
-            // D=i
-            @i
-            D=A
-            // *SP=D
-            @SP
-            A=M
-            M=D
-            // SP++
-            M=M+1
-            */
-            output_ << "@" + std::to_string(index) << std::endl;
-            output_ << "D=A" << std::endl;
-            output_ << "@SP" << std::endl;
-            output_ << "A=M" << std::endl;
-            output_ << "M=D" << std::endl;
-            output_ << "@SP" << std::endl;
-            output_ << "M=M+1" << std::endl;
-        }
-        if (segment == "local" || segment == "argument" || segment == "this" || segment == "that" || segment == "temp")
-        {
-            // @LCL
-            // A=M+index
-            // D=M
-            // @SP
-            // A=M
-            // M=D
-            // @SP
-            // M=M+1
-            output_ << "@" + s << std::endl;
-            if (segment != "temp")
-            {
-                output_ << "A=M" << std::endl;
-                for (int i = 0; i < index; i++)
-                {
-                    output_ << "A=A+1" << std::endl;
-                }
-            }
-            output_ << R"(
-D=M
-@SP
-A=M
-M=D
-@SP
-M=M+1
-)";
-        }
+        translatePush(command, segment, index);
     }
     if (command == "pop")
     {
+        translatePop(command, segment, index);
+    }
+}
 
-        /*
-            // SP--
-            @SP
-            M=M-1
-            // D=SP
-            D=M
-            // XX.i=D
-            @XX.i
-            A=M
-            M=D
-            */
-        output_ << R"(
+void CodeWriter::translatePush(std::string command, std::string segment, int index)
+{
+    std::string s = symbol(segment, index);
+    if (segment == "constant")
+    {
+        output_ << "@" + std::to_string(index) << std::endl;
+        output_ << "D=A" << std::endl;
+        output_ << PUSH << std::endl;
+    }
+    if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
+    {
+        output_ << "@" + s << std::endl;
+        output_ << "A=M" << std::endl;
+        for (int i = 0; i < index; i++)
+        {
+            output_ << "A=A+1" << std::endl;
+        }
+        output_ << "D=M" << std::endl;
+        output_ << PUSH << std::endl;
+    }
+    if (segment == "temp")
+    {
+        output_ << "@" + s << std::endl;
+        output_ << "D=M" << std::endl;
+        output_ << PUSH << std::endl;
+    }
+}
+
+void CodeWriter::translatePop(std::string command, std::string segment, int index)
+{
+    std::string s = symbol(segment, index);
+    output_ << R"(
             @SP
             M=M-1
             A=M
             D=M
         )";
-        output_ << "@" + s << std::endl;
-        if (segment != "temp")
+    output_ << "@" + s << std::endl;
+    if (segment != "temp")
+    {
+        output_ << "A=M" << std::endl;
+        for (int i = 0; i < index; i++)
         {
-            output_ << "A=M" << std::endl;
-            for (int i = 0; i < index; i++)
-            {
-                output_ << "A=A+1" << std::endl;
-            }
+            output_ << "A=A+1" << std::endl;
         }
-        output_ << "M=D" << std::endl;
     }
+    output_ << "M=D" << std::endl;
 }
 
 void CodeWriter::close()
