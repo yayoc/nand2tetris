@@ -240,6 +240,27 @@ void CodeWriter::translatePush(std::string command, std::string segment, int ind
         output_ << "D=A" << std::endl;
         output_ << PUSH << std::endl;
     }
+    if (segment == "pointer")
+    {
+        // THIS
+        if (index == 0)
+        {
+            output_ << R"(
+@THIS
+D=M
+)";
+            output_ << PUSH;
+        }
+        // THAT
+        else if (index == 1)
+        {
+            output_ << R"(
+@THAT
+D=M
+)";
+            output_ << PUSH;
+        }
+    }
     if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
     {
         output_ << s << std::endl;
@@ -262,22 +283,67 @@ void CodeWriter::translatePush(std::string command, std::string segment, int ind
 void CodeWriter::translatePop(std::string command, std::string segment, int index)
 {
     std::string s = symbol(segment, index);
-    output_ << R"(
+    if (segment == "constant")
+    {
+        output_ << R"(
             @SP
             M=M-1
             A=M
             D=M
         )";
-    output_ << s << std::endl;
+        output_ << s << std::endl;
+        output_ << "M=D" << std::endl;
+    }
+    if (segment == "temp")
+    {
+        output_ << R"(
+            @SP
+            M=M-1
+            A=M
+            D=M
+        )";
+        output_ << s << std::endl;
+        output_ << "M=D" << std::endl;
+    }
     if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
     {
+        output_ << R"(
+            @SP
+            M=M-1
+            A=M
+            D=M
+        )";
+        output_ << s << std::endl;
         output_ << "A=M" << std::endl;
         for (int i = 0; i < index; i++)
         {
             output_ << "A=A+1" << std::endl;
         }
+        output_ << "M=D" << std::endl;
     }
-    output_ << "M=D" << std::endl;
+    if (segment == "pointer")
+    {
+        output_ << R"(
+            @SP
+            M=M-1
+            A=M
+            D=M
+        )";
+        if (index == 0)
+        {
+            output_ << R"(
+@THIS
+M=D
+)";
+        }
+        else if (index == 1)
+        {
+            output_ << R"(
+@THAT
+M=D
+)";
+        }
+    }
 }
 
 void CodeWriter::close()
