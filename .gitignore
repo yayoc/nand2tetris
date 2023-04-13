@@ -18,3 +18,5 @@ Makefile
 *.a
 *.so
 *.dll
+
+07/**/*.asm
