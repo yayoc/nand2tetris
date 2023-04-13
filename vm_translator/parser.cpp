@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
+#include <algorithm>
 
 std::string Parser::currentLine()
 {
