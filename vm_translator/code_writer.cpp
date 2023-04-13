@@ -1,3 +1,4 @@
+#include <map>
 #include "code_writer.h"
 
 CodeWriter::CodeWriter(std::ofstream &output, std::string filename) : output_(output), filename_(filename)
@@ -56,6 +57,14 @@ A=M
 M=D
 @SP
 M=M+1
+)";
+
+// SP--, D=*SP
+std::string CodeWriter::POP = R"(
+@SP
+M=M-1
+A=M
+D=M
 )";
 
 void CodeWriter::writeArithmetic(std::string command)
@@ -181,6 +190,17 @@ M=M+1
 
 std::string CodeWriter::symbol(std::string segment, int index)
 {
+    static const std::map<std::string, std::string> baseSymbols = {
+        {"local", "@LCL"},
+        {"argument", "@ARG"},
+        {"this", "@THIS"},
+        {"that", "@THAT"}};
+
+    if (baseSymbols.find(segment) != baseSymbols.end())
+    {
+        return baseSymbols.at(segment);
+    }
+
     if (segment == "static")
     {
         return "@" + filename_ + "." + std::to_string(index);
@@ -189,26 +209,6 @@ std::string CodeWriter::symbol(std::string segment, int index)
     if (segment == "constant")
     {
         return "@" + std::to_string(index);
-    }
-
-    if (segment == "local")
-    {
-        return "@LCL";
-    }
-
-    if (segment == "argument")
-    {
-        return "@ARG";
-    }
-
-    if (segment == "this")
-    {
-        return "@THIS";
-    }
-
-    if (segment == "that")
-    {
-        return "@THAT";
     }
 
     if (segment == "temp")
@@ -291,45 +291,25 @@ void CodeWriter::translatePop(std::string command, std::string segment, int inde
     std::string s = symbol(segment, index);
     if (segment == "constant")
     {
-        output_ << R"(
-            @SP
-            M=M-1
-            A=M
-            D=M
-        )";
+        output_ << POP;
         output_ << s << std::endl;
         output_ << "M=D" << std::endl;
     }
     if (segment == "static")
     {
-        output_ << R"(
-            @SP
-            M=M-1
-            A=M
-            D=M
-        )";
+        output_ << POP;
         output_ << s << std::endl;
         output_ << "M=D" << std::endl;
     }
     if (segment == "temp")
     {
-        output_ << R"(
-            @SP
-            M=M-1
-            A=M
-            D=M
-        )";
+        output_ << POP;
         output_ << s << std::endl;
         output_ << "M=D" << std::endl;
     }
     if (segment == "local" || segment == "argument" || segment == "this" || segment == "that")
     {
-        output_ << R"(
-            @SP
-            M=M-1
-            A=M
-            D=M
-        )";
+        output_ << POP;
         output_ << s << std::endl;
         output_ << "A=M" << std::endl;
         for (int i = 0; i < index; i++)
@@ -340,12 +320,7 @@ void CodeWriter::translatePop(std::string command, std::string segment, int inde
     }
     if (segment == "pointer")
     {
-        output_ << R"(
-            @SP
-            M=M-1
-            A=M
-            D=M
-        )";
+        output_ << POP;
         if (index == 0)
         {
             output_ << R"(

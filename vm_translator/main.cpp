@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
         CommandType type = parser.commandType();
         if (type == C_ARITHMETIC)
         {
-            std::cout << parser.arg1() << std::endl;
             writer.writeArithmetic(parser.arg1());
         }
         else if (type == C_PUSH)

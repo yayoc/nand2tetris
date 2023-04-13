@@ -12,16 +12,13 @@ private:
     static std::string NEG;
     static std::string NOT;
     static std::string PUSH;
+    static std::string POP;
 
     std::ofstream &output_;
     std::string filename_;
     int i_;
 
-    void writeXPlusYToD();
     void writeXMinusYToD();
-    void writeIncrementSP();
-    void writeTrue();
-    void writeFalse();
     void writeTrueI();
     void writeFalseI();
     std::string symbol(std::string segment, int index);
