@@ -61,6 +61,9 @@ int main(int argc, char *argv[])
 
     while (parser.hasMoreLines())
     {
+
+        std::string line = parser.currentLine();
+        writer.writeComment(line);
         CommandType type = parser.commandType();
         if (type == C_ARITHMETIC)
         {

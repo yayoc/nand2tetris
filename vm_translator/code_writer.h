@@ -37,4 +37,5 @@ public:
     void writeCall(std::string functionName, int nArgs);
     void writeReturn();
     void close();
+    void writeComment(std::string comment);
 };

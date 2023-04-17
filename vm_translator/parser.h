@@ -23,7 +23,6 @@ class Parser
 private:
     int n_;
     std::vector<std::string> lines_;
-    std::string currentLine();
 
 public:
     Parser(std::string input);
@@ -32,6 +31,7 @@ public:
     CommandType commandType();
     std::string arg1();
     int arg2();
+    std::string currentLine();
 };
 
 #endif

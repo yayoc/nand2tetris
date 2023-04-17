@@ -244,13 +244,14 @@ void CodeWriter::writeLabel(std::string label)
 void CodeWriter::writeGoto(std::string label)
 {
     output_ << "@" << label << std::endl;
+    output_ << "0;JMP" << std::endl;
 }
 
 void CodeWriter::writeIf(std::string label)
 {
     output_ << POP;
     output_ << "@" << label << std::endl;
-    output_ << "D;JNE" << std::endl;
+    output_ << "D;JGT" << std::endl;
 }
 
 void CodeWriter::translatePush(std::string command, std::string segment, int index)
@@ -363,4 +364,9 @@ M=D
 void CodeWriter::close()
 {
     output_.close();
+}
+
+void CodeWriter::writeComment(std::string comment)
+{
+    output_ << "// " << comment << std::endl;
 }
