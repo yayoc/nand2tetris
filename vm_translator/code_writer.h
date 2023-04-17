@@ -26,8 +26,15 @@ private:
     void translatePop(std::string command, std::string segment, int index);
 
 public:
-    CodeWriter(std::ofstream &output, std::string filename);
+    CodeWriter(std::ofstream &output);
+    void setFileName(std::string filename);
     void writeArithmetic(std::string command);
     void writePushPop(std::string command, std::string segment, int index);
+    void writeLabel(std::string label);
+    void writeGoto(std::string label);
+    void writeIf(std::string label);
+    void writeFunction(std::string functionName, int nVars);
+    void writeCall(std::string functionName, int nArgs);
+    void writeReturn();
     void close();
 };

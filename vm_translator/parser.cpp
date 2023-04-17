@@ -66,6 +66,31 @@ CommandType Parser::commandType()
         return C_POP;
     }
 
+    if (line.find("label") != std::string::npos)
+    {
+        return C_LABEL;
+    }
+
+    if (line.find("if-goto") != std::string::npos)
+    {
+        return C_IF;
+    }
+
+    if (line.find("goto") != std::string::npos)
+    {
+        return C_GOTO;
+    }
+
+    if (line.find("function") != std::string::npos)
+    {
+        return C_FUNCTION;
+    }
+
+    if (line.find("return") != std::string::npos)
+    {
+        return C_RETURN;
+    }
+
     return C_UNKNOWN;
 }
 

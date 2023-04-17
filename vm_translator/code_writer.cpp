@@ -1,9 +1,14 @@
 #include <map>
 #include "code_writer.h"
 
-CodeWriter::CodeWriter(std::ofstream &output, std::string filename) : output_(output), filename_(filename)
+CodeWriter::CodeWriter(std::ofstream &output) : output_(output)
 {
     i_ = 0;
+}
+
+void CodeWriter::setFileName(std::string filename)
+{
+    filename_ = filename;
 }
 
 std::string CodeWriter::ADD = R"(
@@ -229,6 +234,23 @@ void CodeWriter::writePushPop(std::string command, std::string segment, int inde
     {
         translatePop(command, segment, index);
     }
+}
+
+void CodeWriter::writeLabel(std::string label)
+{
+    output_ << "(" << label << ")" << std::endl;
+}
+
+void CodeWriter::writeGoto(std::string label)
+{
+    output_ << "@" << label << std::endl;
+}
+
+void CodeWriter::writeIf(std::string label)
+{
+    output_ << POP;
+    output_ << "@" << label << std::endl;
+    output_ << "D;JNE" << std::endl;
 }
 
 void CodeWriter::translatePush(std::string command, std::string segment, int index)

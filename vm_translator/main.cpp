@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
     Parser parser = Parser(input);
 
     std::ofstream output_file(output_file_path);
-    CodeWriter writer = CodeWriter(output_file, fn);
+    CodeWriter writer = CodeWriter(output_file);
+    writer.setFileName(fn);
 
     while (parser.hasMoreLines())
     {
@@ -73,6 +74,19 @@ int main(int argc, char *argv[])
         {
             writer.writePushPop("pop", parser.arg1(), parser.arg2());
         }
+        else if (type == C_LABEL)
+        {
+            writer.writeLabel(parser.arg1());
+        }
+        else if (type == C_GOTO)
+        {
+            writer.writeGoto(parser.arg1());
+        }
+        else if (type == C_IF)
+        {
+            writer.writeIf(parser.arg1());
+        }
+
         parser.advance();
     }
     writer.close();
