@@ -9,7 +9,6 @@ CMakeFiles/
 *.cmake
 
 # Ignore generated Makefiles
-Makefile
 
 # Ignore compiled binaries and executables
 *.o
