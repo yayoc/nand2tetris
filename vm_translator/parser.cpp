@@ -1,5 +1,6 @@
 #include "parser.h"
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <unordered_set>
 #include <algorithm>
@@ -9,9 +10,19 @@ std::string Parser::currentLine()
     return lines_[n_];
 }
 
-Parser::Parser(std::string input)
+Parser::Parser(std::string input_file_path)
 {
     n_ = 0;
+
+    std::ifstream f(input_file_path);
+    std::string input;
+    if (f)
+    {
+        std::ostringstream ss;
+        ss << f.rdbuf();
+        input = ss.str();
+    }
+
     auto ss = std::stringstream(input);
     std::string line;
     while (getline(ss, line))
