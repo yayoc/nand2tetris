@@ -89,6 +89,10 @@ int main(int argc, char *argv[])
     std::cout << "output_file_path: " << output_file_path << std::endl;
     std::ofstream output_file(output_file_path);
     CodeWriter writer = CodeWriter(output_file);
+    if (std::filesystem::is_directory(input_path))
+    {
+        writer.writeBootstrap();
+    }
 
     for (const auto &file : vm_files)
     {

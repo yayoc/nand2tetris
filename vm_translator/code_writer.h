@@ -38,6 +38,7 @@ public:
     void writeFunction(std::string functionName, int nVars);
     void writeCall(std::string functionName, int nArgs);
     void writeReturn();
+    void writeBootstrap();
     void close();
     void writeComment(std::string comment);
 };

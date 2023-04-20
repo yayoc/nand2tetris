@@ -4,11 +4,6 @@
 CodeWriter::CodeWriter(std::ofstream &output) : output_(output)
 {
     i_ = 0;
-    output << "@256" << std::endl;
-    output << "D=A" << std::endl;
-    output << "@SP" << std::endl;
-    output << "M=D" << std::endl;
-    writeCall("Sys.init", 0);
 }
 
 void CodeWriter::setFileName(std::string filename)
@@ -372,6 +367,15 @@ void CodeWriter::writeReturn()
     output_ << "@R13" << std::endl;
     output_ << "A=M" << std::endl;
     output_ << "0;JMP" << std::endl;
+}
+
+void CodeWriter::writeBootstrap()
+{
+    output_ << "@256" << std::endl;
+    output_ << "D=A" << std::endl;
+    output_ << "@SP" << std::endl;
+    output_ << "M=D" << std::endl;
+    writeCall("Sys.init", 0);
 }
 
 void CodeWriter::translatePush(std::string command, std::string segment, int index)
