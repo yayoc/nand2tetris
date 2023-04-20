@@ -17,6 +17,7 @@ private:
     std::ofstream &output_;
     std::string filename_;
     int i_;
+    std::string functionname_;
 
     void writeXMinusYToD();
     void writeTrueI();

@@ -10,6 +10,18 @@ std::string Parser::currentLine()
     return lines_[n_];
 }
 
+std::string removeComment(const std::string &inputStr)
+{
+    std::size_t commentPos = inputStr.find("//");
+
+    if (commentPos != std::string::npos)
+    {
+        return inputStr.substr(0, commentPos);
+    }
+
+    return inputStr;
+}
+
 Parser::Parser(std::string input_file_path)
 {
     n_ = 0;
@@ -27,6 +39,7 @@ Parser::Parser(std::string input_file_path)
     std::string line;
     while (getline(ss, line))
     {
+        line = removeComment(line);
         // Remove leading and trailing whitespace
         line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char ch)
                                               { return !std::isspace(ch); }));
@@ -34,13 +47,11 @@ Parser::Parser(std::string input_file_path)
                                 { return !std::isspace(ch); })
                        .base(),
                    line.end());
-
         // Ignore comments and empty lines
         if (line.empty() || line[0] == '/')
         {
             continue;
         }
-
         lines_.push_back(line);
     }
 }

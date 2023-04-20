@@ -4,6 +4,11 @@
 CodeWriter::CodeWriter(std::ofstream &output) : output_(output)
 {
     i_ = 0;
+    output << "@256" << std::endl;
+    output << "D=A" << std::endl;
+    output << "@SP" << std::endl;
+    output << "M=D" << std::endl;
+    writeCall("Sys.init", 0);
 }
 
 void CodeWriter::setFileName(std::string filename)
@@ -114,9 +119,7 @@ void CodeWriter::writeArithmetic(std::string command)
         output_ << "D;JNE" << std::endl;
         writeTrueI();
         writeFalseI();
-        output_ << "(RET_ADDRESS_CALL" + i_string + ")" << std::endl;
-
-        i_++;
+        writeReturnAddr();
     }
 
     if (command == "lt")
@@ -180,12 +183,10 @@ void CodeWriter::writeReturnAddr()
 void CodeWriter::writeXMinusYToD()
 {
     output_ << R"(
-// D=y
 @SP
 M=M-1
 A=M
 D=M
-// D=x-y
 @SP
 M=M-1
 A=M
@@ -240,25 +241,26 @@ void CodeWriter::writePushPop(std::string command, std::string segment, int inde
 
 void CodeWriter::writeLabel(std::string label)
 {
-    output_ << "(" << label << ")" << std::endl;
+    output_ << "(" + functionname_ + "$" + label + ")" << std::endl;
 }
 
 void CodeWriter::writeGoto(std::string label)
 {
-    output_ << "@" << label << std::endl;
+    output_ << "@" + functionname_ + "$" + label << std::endl;
     output_ << "0;JMP" << std::endl;
 }
 
 void CodeWriter::writeIf(std::string label)
 {
     output_ << POP;
-    output_ << "@" << label << std::endl;
-    output_ << "D;JGT" << std::endl;
+    output_ << "@" + functionname_ + "$" + label << std::endl;
+    output_ << "D;JNE" << std::endl;
 }
 
 void CodeWriter::writeFunction(std::string functionName, int nVars)
 {
-    output_ << "(" + filename_ + "." + functionName + ")" << std::endl;
+    functionname_ = functionName;
+    output_ << "(" + functionName + ")" << std::endl;
     for (int i = 0; i < nVars; i++)
     {
         output_ << "D=0" << std::endl;
@@ -268,7 +270,7 @@ void CodeWriter::writeFunction(std::string functionName, int nVars)
 
 void CodeWriter::writeCall(std::string functionName, int nArgs)
 {
-    output_ << "@RET_ADDRESS_CALL" + std::to_string(i_) << std::endl;
+    output_ << "@" + functionName + "$ret" + std::to_string(i_) << std::endl;
     output_ << "D=A" << std::endl;
     output_ << PUSH;
 
@@ -309,10 +311,11 @@ void CodeWriter::writeCall(std::string functionName, int nArgs)
     output_ << "M=D" << std::endl;
 
     // goto f
-    output_ << "@" + filename_ + "." + functionName << std::endl;
+    output_ << "@" + functionName << std::endl;
     output_ << "0;JMP" << std::endl;
 
-    writeReturnAddr();
+    output_ << "(" + functionName + "$ret" + std::to_string(i_) + ")" << std::endl;
+    i_++;
 }
 
 void CodeWriter::writeReturn()
