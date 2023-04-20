@@ -102,6 +102,11 @@ CommandType Parser::commandType()
         return C_RETURN;
     }
 
+    if (line.find("call") != std::string::npos)
+    {
+        return C_CALL;
+    }
+
     return C_UNKNOWN;
 }
 

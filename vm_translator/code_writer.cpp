@@ -261,11 +261,8 @@ void CodeWriter::writeFunction(std::string functionName, int nVars)
     output_ << "(" + filename_ + "." + functionName + ")" << std::endl;
     for (int i = 0; i < nVars; i++)
     {
-        output_ << "@LCL" << std::endl;
-        output_ << "D=M" << std::endl;
-        output_ << "@" + std::to_string(i) << std::endl;
-        output_ << "A=A+D" << std::endl;
-        output_ << "M=0" << std::endl;
+        output_ << "D=0" << std::endl;
+        output_ << PUSH;
     }
 }
 
@@ -275,40 +272,46 @@ void CodeWriter::writeCall(std::string functionName, int nArgs)
     output_ << "D=A" << std::endl;
     output_ << PUSH;
 
+    // push LCL
     output_ << "@LCL" << std::endl;
     output_ << "D=M" << std::endl;
     output_ << PUSH;
 
+    // push ARG
     output_ << "@ARG" << std::endl;
     output_ << "D=M" << std::endl;
     output_ << PUSH;
 
+    // push THIS
     output_ << "@THIS" << std::endl;
     output_ << "D=M" << std::endl;
     output_ << PUSH;
 
+    // push THAT
     output_ << "@THAT" << std::endl;
     output_ << "D=M" << std::endl;
     output_ << PUSH;
 
-    // ARG=SP-5-nArgs
+    // ARG = SP-5-nArgs
+    output_ << "@SP" << std::endl;
+    output_ << "D=M" << std::endl;
     output_ << "@5" << std::endl;
-    output_ << "D=A" << std::endl;
+    output_ << "D=D-A" << std::endl;
     output_ << "@" + std::to_string(nArgs) << std::endl;
     output_ << "D=D-A" << std::endl;
-    output_ << "@SP" << std::endl;
-    output_ << "D=A-D" << std::endl;
     output_ << "@ARG" << std::endl;
     output_ << "M=D" << std::endl;
 
-    // LCL=SP
+    // LCL = SP
     output_ << "@SP" << std::endl;
     output_ << "D=M" << std::endl;
     output_ << "@LCL" << std::endl;
     output_ << "M=D" << std::endl;
 
+    // goto f
     output_ << "@" + filename_ + "." + functionName << std::endl;
     output_ << "0;JMP" << std::endl;
+
     writeReturnAddr();
 }
 
