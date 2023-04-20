@@ -125,6 +125,18 @@ int main(int argc, char *argv[])
             {
                 writer.writeIf(parser.arg1());
             }
+            else if (type == C_FUNCTION)
+            {
+                writer.writeFunction(parser.arg1(), parser.arg2());
+            }
+            else if (type == C_CALL)
+            {
+                writer.writeCall(parser.arg1(), parser.arg2());
+            }
+            else if (type == C_RETURN)
+            {
+                writer.writeReturn();
+            }
 
             parser.advance();
         }

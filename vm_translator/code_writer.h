@@ -21,6 +21,7 @@ private:
     void writeXMinusYToD();
     void writeTrueI();
     void writeFalseI();
+    void writeReturnAddr();
     std::string symbol(std::string segment, int index);
     void translatePush(std::string command, std::string segment, int index);
     void translatePop(std::string command, std::string segment, int index);

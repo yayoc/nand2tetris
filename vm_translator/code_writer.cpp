@@ -129,9 +129,7 @@ void CodeWriter::writeArithmetic(std::string command)
         output_ << "D;JGE" << std::endl;
         writeTrueI();
         writeFalseI();
-        output_ << "(RET_ADDRESS_CALL" + i_string + ")" << std::endl;
-
-        i_++;
+        writeReturnAddr();
     }
     if (command == "gt")
     {
@@ -143,9 +141,7 @@ void CodeWriter::writeArithmetic(std::string command)
         output_ << "D;JLE" << std::endl;
         writeTrueI();
         writeFalseI();
-        output_ << "(RET_ADDRESS_CALL" + i_string + ")" << std::endl;
-
-        i_++;
+        writeReturnAddr();
     }
 }
 
@@ -173,6 +169,12 @@ M=0
 )";
     output_ << "@RET_ADDRESS_CALL" + i_string << std::endl;
     output_ << "0;JMP" << std::endl;
+}
+
+void CodeWriter::writeReturnAddr()
+{
+    output_ << "(RET_ADDRESS_CALL" + std::to_string(i_) + ")" << std::endl;
+    i_++;
 }
 
 void CodeWriter::writeXMinusYToD()
@@ -252,6 +254,118 @@ void CodeWriter::writeIf(std::string label)
     output_ << POP;
     output_ << "@" << label << std::endl;
     output_ << "D;JGT" << std::endl;
+}
+
+void CodeWriter::writeFunction(std::string functionName, int nVars)
+{
+    output_ << "(" + filename_ + "." + functionName + ")" << std::endl;
+    for (int i = 0; i < nVars; i++)
+    {
+        output_ << "@LCL" << std::endl;
+        output_ << "D=M" << std::endl;
+        output_ << "@" + std::to_string(i) << std::endl;
+        output_ << "A=A+D" << std::endl;
+        output_ << "M=0" << std::endl;
+    }
+}
+
+void CodeWriter::writeCall(std::string functionName, int nArgs)
+{
+    output_ << "@RET_ADDRESS_CALL" + std::to_string(i_) << std::endl;
+    output_ << "D=A" << std::endl;
+    output_ << PUSH;
+
+    output_ << "@LCL" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << PUSH;
+
+    output_ << "@ARG" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << PUSH;
+
+    output_ << "@THIS" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << PUSH;
+
+    output_ << "@THAT" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << PUSH;
+
+    // ARG=SP-5-nArgs
+    output_ << "@5" << std::endl;
+    output_ << "D=A" << std::endl;
+    output_ << "@" + std::to_string(nArgs) << std::endl;
+    output_ << "D=D-A" << std::endl;
+    output_ << "@SP" << std::endl;
+    output_ << "D=A-D" << std::endl;
+    output_ << "@ARG" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // LCL=SP
+    output_ << "@SP" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@LCL" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    output_ << "@" + filename_ + "." + functionName << std::endl;
+    output_ << "0;JMP" << std::endl;
+    writeReturnAddr();
+}
+
+void CodeWriter::writeReturn()
+{
+    // R13 = *(LCL - 5)
+    output_ << "@LCL" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@5" << std::endl;
+    output_ << "A=D-A" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@R13" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // *ARG = pop()
+    output_ << POP;
+    output_ << "@ARG" << std::endl;
+    output_ << "A=M" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // SP = ARG + 1
+    output_ << "@ARG" << std::endl;
+    output_ << "D=M+1" << std::endl;
+    output_ << "@SP" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // THAT = *(LCL - 1), LCL--
+    output_ << "@LCL" << std::endl;
+    output_ << "AM=M-1" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@THAT" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // THIS = *(LCL - 1), LCL--
+    output_ << "@LCL" << std::endl;
+    output_ << "AM=M-1" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@THIS" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // ARG = *(LCL - 1), LCL--
+    output_ << "@LCL" << std::endl;
+    output_ << "AM=M-1" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@ARG" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    // LCL = *(LCL - 1)
+    output_ << "@LCL" << std::endl;
+    output_ << "A=M-1" << std::endl;
+    output_ << "D=M" << std::endl;
+    output_ << "@LCL" << std::endl;
+    output_ << "M=D" << std::endl;
+
+    output_ << "@R13" << std::endl;
+    output_ << "A=M" << std::endl;
+    output_ << "0;JMP" << std::endl;
 }
 
 void CodeWriter::translatePush(std::string command, std::string segment, int index)
