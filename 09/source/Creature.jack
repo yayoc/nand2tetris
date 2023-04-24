@@ -1,0 +1,111 @@
+/** Implements a graphical . */
+class Creature {
+
+   field int x, y; // screen location of the creature's top-left corner
+   field int size;
+
+   /** Constructs a new creature with a given location. */
+   constructor Creature new(int Ax, int Ay) {
+      let x = Ax;
+      let y = Ay;
+      let size = 16;
+      do draw();
+      return this;
+   }
+
+   /** Disposes this creature. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Draws the creature on the screen. */
+   method void draw() {
+      var int location;
+      var int memAddress;
+      let location = (y * 32) + (x / 16);
+      let memAddress = 16384+location;
+      do Memory.poke(memAddress+0, 0);
+      do Memory.poke(memAddress+32, 2064);
+      do Memory.poke(memAddress+64, 1056);
+      do Memory.poke(memAddress+96, 576);
+      do Memory.poke(memAddress+128, 576);
+      do Memory.poke(memAddress+160, 4080);
+      do Memory.poke(memAddress+192, 4104);
+      do Memory.poke(memAddress+224, 5736);
+      do Memory.poke(memAddress+256, 4104);
+      do Memory.poke(memAddress+288, 14748);
+      do Memory.poke(memAddress+320, 18450);
+      do Memory.poke(memAddress+352, 20466);
+      do Memory.poke(memAddress+384, 17442);
+      do Memory.poke(memAddress+416, 17442);
+      do Memory.poke(memAddress+448, 17442);
+      do Memory.poke(memAddress+480, 0);
+      return;
+   }
+
+   /** Erases the creature from the screen. */
+   method void erase() {
+      var int location;
+      var int memAddress;
+      let location = (y * 32) + (x / 16);
+      let memAddress = 16384+location;
+      do Memory.poke(memAddress+0, 0);
+      do Memory.poke(memAddress+32, 0);
+      do Memory.poke(memAddress+64, 0);
+      do Memory.poke(memAddress+96, 0);
+      do Memory.poke(memAddress+128, 0);
+      do Memory.poke(memAddress+160, 0);
+      do Memory.poke(memAddress+192, 0);
+      do Memory.poke(memAddress+224, 0);
+      do Memory.poke(memAddress+256, 0);
+      do Memory.poke(memAddress+288, 0);
+      do Memory.poke(memAddress+320, 0);
+      do Memory.poke(memAddress+352, 0);
+      do Memory.poke(memAddress+384, 0);
+      do Memory.poke(memAddress+416, 0);
+      do Memory.poke(memAddress+448, 0);
+      do Memory.poke(memAddress+480, 0);
+      return;
+   }
+
+   /** Moves the creature up by 1 pixels. */
+   method void moveUp() {
+      if (y > 1) {
+         do erase();
+         let y = y - 1;
+         do draw();
+      }
+      return;
+   }
+
+   /** Moves the creature down by 1 pixels. */
+   method void moveDown() {
+      if ((y + size) < 254) {
+         do erase();
+         let y = y + 1;
+         do draw();
+      }
+      return;
+   }
+
+   /** Moves the creature left by 1 pixels. */
+   method void moveLeft() {
+      if (x > 1) {
+         do erase();
+         let x = x - 1;
+         do draw();
+      }
+      return;
+   }
+
+   /** Moves the creature right by 1 pixels. */
+   method void moveRight() {
+      if ((x + size) < 510) {
+         do erase();
+         let x = x + 1;
+         do draw();
+      }
+      return;
+   }
+}

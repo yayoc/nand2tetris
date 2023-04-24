@@ -1,0 +1,60 @@
+class CreatureGame {
+   field Creature creature; // the creature of this game
+   field int direction; // the creature's current direction: 
+                        // 0=none, 1=up, 2=down, 3=left, 4=right
+
+   /** Constructs a new Creature Game. */
+   constructor CreatureGame new() {
+      // Creates a 30 by 30 pixels creature and positions it at the top-left
+      // of the screen.
+      let creature = Creature.new(0, 0);
+      let direction = 0;  // initial state is no movement
+      return this;
+   }
+
+   /** Disposes this game. */
+   method void dispose() {
+      do creature.dispose();
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Moves the creature in the current direction. */
+   method void movecreature() {
+      if (direction = 1) { do creature.moveUp(); }
+      if (direction = 2) { do creature.moveDown(); }
+      if (direction = 3) { do creature.moveLeft(); }
+      if (direction = 4) { do creature.moveRight(); }
+      do Sys.wait(5);  // delays the next movement
+      return;
+   }
+
+   /** Runs the game: handles the user's inputs and moves the creature accordingly */
+   method void run() {
+      var char key;  // the key currently pressed by the user
+      var boolean exit;
+      let exit = false;
+      
+      while (~exit) {
+         // waits for a key to be pressed
+         while (key = 0) {
+            let key = Keyboard.keyPressed();
+         }
+         if (key = 81)  { let exit = true; }     // q key
+         if (key = 131) { let direction = 1; }   // up arrow
+         if (key = 133) { let direction = 2; }   // down arrow
+         if (key = 130) { let direction = 3; }   // left arrow
+         if (key = 132) { let direction = 4; }   // right arrow
+
+         // waits for the key to be released
+         while (~(key = 0)) {
+            let key = Keyboard.keyPressed();
+            do movecreature();
+         }
+     } // while
+     return;
+   }
+}
+
+
+
