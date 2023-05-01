@@ -47,11 +47,12 @@ private:
     eTokenType tokenType_;
 
     std::string consumeWhile(bool (*func)(char));
+    std::string consumeWhile(bool (*func)(char, char));
     char peek(int n = 0);
     char consumeChar(char);
     char consumeChar();
+    std::string consumeRedundantChars();
     std::string consumeSpace();
-    std::string consumeIgnoredChars();
     std::string consumeInlineComment();
     std::string consumeBlockComment();
 

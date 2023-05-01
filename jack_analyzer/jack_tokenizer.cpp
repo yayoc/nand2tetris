@@ -7,10 +7,7 @@
 #include <cctype>
 #include <string>
 
-static const std::unordered_set<char> symbols = {
-    '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~'};
-
-std::string JackTokenizer::consumeIgnoredChars()
+std::string JackTokenizer::consumeRedundantChars()
 {
     std::string res;
     res += consumeSpace();
@@ -18,21 +15,18 @@ std::string JackTokenizer::consumeIgnoredChars()
     res += consumeBlockComment();
     if (res.length() > 0)
     {
-        res += consumeIgnoredChars();
+        res += consumeRedundantChars();
     }
-    // std::cout << res << std::endl;
     return res;
 }
-
-auto isSpace = [](char c)
-{
-    return c == ' ' || c == '\n' || c == '\r' || c == '\t';
-};
 
 std::string JackTokenizer::consumeSpace()
 {
     std::string str;
-
+    auto isSpace = [](char a)
+    {
+        return a == ' ' || a == '\n' || a == '\r' || a == '\t';
+    };
     if (isSpace(peek()))
     {
 
@@ -66,20 +60,11 @@ std::string JackTokenizer::consumeBlockComment()
         str += consumeChar('/');
         str += consumeChar('*');
         str += consumeChar('*');
-        do
+        auto isNotEnd = [](char a, char b)
         {
-            char c = peek();
-            char cn = peek(1);
-            if (c == '*' && cn == '/')
-            {
-                break;
-            }
-            else
-            {
-                str += c;
-                pos_++;
-            }
-        } while (hasMoreTokens());
+            return a != '*' || b != '/';
+        };
+        str += consumeWhile(isNotEnd);
         str += consumeChar('*');
         str += consumeChar('/');
     }
@@ -91,10 +76,31 @@ std::string JackTokenizer::consumeWhile(bool (*func)(char))
     std::string str;
     do
     {
-        char c = peek();
-        if (func(c))
+        char a = peek();
+        if (func(a))
         {
-            str += c;
+            str += a;
+            pos_++;
+        }
+        else
+        {
+            break;
+        }
+    } while (hasMoreTokens());
+
+    return str;
+}
+
+std::string JackTokenizer::consumeWhile(bool (*func)(char, char))
+{
+    std::string str;
+    do
+    {
+        char a = peek();
+        char b = peek(1);
+        if (func(a, b))
+        {
+            str += a;
             pos_++;
         }
         else
@@ -155,13 +161,15 @@ bool JackTokenizer::hasMoreTokens()
 
 bool isSymbol(char c)
 {
+    static const std::unordered_set<char> symbols = {
+        '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~'};
     return symbols.find(c) != symbols.end();
 }
 
 // Gets the next token from the input, and makes it the current token.
 void JackTokenizer::advance()
 {
-    std::string ignored = consumeIgnoredChars();
+    std::string ignored = consumeRedundantChars();
     char c = peek();
     if (isSymbol(c))
     {
@@ -170,9 +178,9 @@ void JackTokenizer::advance()
     }
     else if (isdigit(c))
     {
-        auto isNotDigit = [](char c)
+        auto isNotDigit = [](char a)
         {
-            return isdigit(c) != 0;
+            return isdigit(a) != 0;
         };
         tokenVal_ = consumeWhile(isNotDigit);
         tokenType_ = eTokenType::IntConst;
@@ -180,9 +188,9 @@ void JackTokenizer::advance()
     else if (c == '"')
     {
         consumeChar('"');
-        auto isNotDoubleQuote = [](char c)
+        auto isNotDoubleQuote = [](char a)
         {
-            return c != '"';
+            return a != '"';
         };
         tokenVal_ = consumeWhile(isNotDoubleQuote);
         tokenType_ = eTokenType::StringConst;
@@ -191,9 +199,9 @@ void JackTokenizer::advance()
     else if (isalpha(c))
     {
         std::string str;
-        auto letters = [](char c)
+        auto letters = [](char a)
         {
-            return isalnum(c) || c == '_';
+            return isalnum(a) || a == '_';
         };
         str = consumeWhile(letters);
         static const std::unordered_set<std::string> keywords = {
