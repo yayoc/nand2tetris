@@ -22,3 +22,4 @@ CMakeFiles/
 08/**/*.asm
 
 vm_translator/VMTranslator
+jack_analyzer/JackAnalyzer
