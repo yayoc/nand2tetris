@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <filesystem>
+#include <vector>
 
 #include "jack_tokenizer.h"
 #include "compilation_engine.h"

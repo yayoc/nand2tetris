@@ -2,6 +2,7 @@
 #define HEADER_COMPILATION_ENGINE_H
 
 #include <fstream>
+#include <vector>
 #include "jack_tokenizer.h"
 #include "token.h"
 class CompilationEngine
