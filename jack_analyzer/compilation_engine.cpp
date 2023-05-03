@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_set>
+#include <vector>
 
 #include "compilation_engine.h"
 

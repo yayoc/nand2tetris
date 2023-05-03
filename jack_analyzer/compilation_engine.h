@@ -24,7 +24,7 @@ private:
     Token peek(int n = 0);
 
 public:
-    CompilationEngine(std::vector<Token> tokens, std::ofstream &output) : output_(output), tokens_(tokens)
+    CompilationEngine(std::vector<Token> tokens, std::ofstream &output) : tokens_(tokens), output_(output)
     {
         pos_ = 0;
     };
