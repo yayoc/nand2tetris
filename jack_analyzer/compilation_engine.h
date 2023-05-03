@@ -19,6 +19,8 @@ private:
     void compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)());
     void compileStatement();
     void compileExpressionWithComma();
+    void compileTermWithOP();
+    void compileSubroutineCall();
     Token peek(int n = 0);
 
 public:

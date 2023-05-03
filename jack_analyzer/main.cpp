@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
                 break;
             case eTokenType::IntConst:
                 token.type = eTokenType::IntConst;
-                token.value = tokenizer.intVal();
+                token.value = std::to_string(tokenizer.intVal()); // Why compiler didn't error when assining intVal to value?
                 break;
             case eTokenType::StringConst:
                 token.type = eTokenType::StringConst;

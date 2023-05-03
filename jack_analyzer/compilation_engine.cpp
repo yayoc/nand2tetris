@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 
 #include "compilation_engine.h"
 
@@ -153,6 +154,33 @@ void CompilationEngine::compileExpressionWithComma()
 {
     process(",");
     compileExpression();
+}
+
+void CompilationEngine::compileTermWithOP()
+{
+    process();
+    compileTerm();
+}
+
+void CompilationEngine::compileSubroutineCall()
+{
+    Token t = peek(1);
+    if (t.value == "(")
+    {
+        process(); // subroutineName;
+        process("(");
+        compileExpressionList();
+        process(")");
+    }
+    else
+    {
+        process(); // (className|varName);
+        process(".");
+        process(); // subroutineName;
+        process("(");
+        compileExpressionList();
+        process(")");
+    }
 }
 
 Token CompilationEngine::peek(int n)
@@ -314,24 +342,7 @@ void CompilationEngine::compileDo()
 {
     print("<doStatement>");
     process("do");
-    /** subroutineCall */
-    Token t = peek(1);
-    if (t.value == "(")
-    {
-        process(); // subroutineName;
-        process("(");
-        compileExpressionList();
-        process(")");
-    }
-    else
-    {
-        process(); // (className|varName);
-        process(".");
-        process(); // subroutineName;
-        process("(");
-        compileExpressionList();
-        process(")");
-    }
+    compileSubroutineCall();
     process(";");
     print("</doStatement>");
 }
@@ -352,14 +363,46 @@ void CompilationEngine::compileReturn()
 void CompilationEngine::compileExpression()
 {
     print("<expression>");
-    compileTerm(); // TODO:
+    compileTerm();
+    auto isOP = [](Token t)
+    {
+        static const std::unordered_set<std::string> operators = {"+", "-", "*", "/", "&", "|", "<", ">", "="};
+        return operators.find(t.value) != operators.end();
+    };
+    compileWhile(isOP, &CompilationEngine::compileTermWithOP);
     print("</expression>");
 }
 
 void CompilationEngine::compileTerm()
 {
     print("<term>");
-    process(); // TODO:
+    Token t = peek();
+    if (t.value == "(") // ( expression )
+    {
+        process("(");
+        compileExpression();
+        process(")");
+    }
+    else if (t.value == "-" || t.value == "~") // (unaryOp term)
+    {
+        process();
+        compileTerm();
+    }
+    else if (peek(1).value == "(" || peek(1).value == ".") // subroutineCall
+    {
+        compileSubroutineCall();
+    }
+    else
+    {
+        process();
+        Token s = peek();
+        if (s.value == "[")
+        {
+            process("[");
+            compileExpression();
+            process("]");
+        }
+    }
     print("</term>");
 }
 
@@ -373,13 +416,14 @@ int CompilationEngine::compileExpressionList()
     if (isExpression(peek()))
     {
         compileExpression();
-    }
-    auto isComma = [](Token t)
-    {
-        return t.value == ",";
-    };
+        auto isComma = [](Token t)
+        {
+            return t.value == ",";
+        };
 
-    compileWhile(isComma, &CompilationEngine::compileExpressionWithComma);
+        compileWhile(isComma, &CompilationEngine::compileExpressionWithComma);
+    }
+
     print("</expressionList>");
 
     return 0;
