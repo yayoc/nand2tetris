@@ -4,6 +4,8 @@
 #include <filesystem>
 
 #include "jack_tokenizer.h"
+#include "compilation_engine.h"
+#include "token.h"
 
 class Writer
 {
@@ -124,34 +126,40 @@ int main(int argc, char *argv[])
         std::cout << "input file: " << file << std::endl;
         std::cout << "output file: " << output_file_path << std::endl;
         std::ofstream output(output_file_path);
-        Writer writer = Writer(output);
-        writer.writeTag("tokens");
-        writer.writeNewLine();
+        std::vector<Token> tokens = {};
 
         while (tokenizer.hasMoreTokens())
         {
+            Token token;
             switch (tokenizer.tokenType())
             {
             case eTokenType::Keyword:
-                writer.writeToken("keyword", tokenizer.keyword());
+                token.type = eTokenType::Keyword;
+                token.value = tokenizer.keyword();
                 break;
             case eTokenType::Symbol:
-                writer.writeToken("symbol", tokenizer.symbol());
+                token.type = eTokenType::Symbol;
+                token.value = tokenizer.symbol();
                 break;
             case eTokenType::Identifier:
-                writer.writeToken("identifier", tokenizer.identifier());
+                token.type = eTokenType::Identifier;
+                token.value = tokenizer.identifier();
                 break;
             case eTokenType::IntConst:
-                writer.writeToken("integerConstant", std::to_string(tokenizer.intVal()));
+                token.type = eTokenType::IntConst;
+                token.value = tokenizer.intVal();
                 break;
             case eTokenType::StringConst:
-                writer.writeToken("stringConstant", tokenizer.stringVal());
+                token.type = eTokenType::StringConst;
+                token.value = tokenizer.stringVal();
                 break;
             default:
                 break;
             }
+            tokens.push_back(token);
             tokenizer.advance();
         }
-        writer.writeEndTag("tokens");
+        CompilationEngine engine = CompilationEngine(tokens, output);
+        engine.compileClass();
     }
 }

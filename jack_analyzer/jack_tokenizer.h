@@ -1,4 +1,5 @@
-
+#ifndef HEADER_JACK_TOKENIZER_H
+#define HEADER_JACK_TOKENIZER_H
 
 #include <string>
 
@@ -67,3 +68,5 @@ public:
     int intVal();
     std::string stringVal();
 };
+
+#endif // HEADER_JACK_TOKENIZER_H

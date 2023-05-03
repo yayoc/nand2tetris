@@ -126,8 +126,6 @@ char JackTokenizer::consumeChar(char c)
     }
     else
     {
-        std::cout << int(curChar) << std::endl;
-        std::cout << "unexpected char:" + std::string(1, curChar) + "should be " + std::string(1, c) << std::endl;
         throw "unexpected char:" + std::string(1, curChar) + "should be " + std::string(1, c);
     }
     return curChar;
@@ -217,8 +215,6 @@ void JackTokenizer::advance()
 
         tokenVal_ = str;
     }
-    std::cout << tokenType_ << std::endl;
-    std::cout << tokenVal_ << std::endl;
 }
 
 eTokenType JackTokenizer::tokenType()
