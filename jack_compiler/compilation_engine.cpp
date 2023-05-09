@@ -56,14 +56,43 @@ void CompilationEngine::printXML(Token token)
     }
 }
 
-void CompilationEngine::process()
+void CompilationEngine::printSymbol(std::string name)
+{
+    if (classSymbolTable_.has(name))
+    {
+        print("<type>");
+        print(classSymbolTable_.typeOf(name));
+        print("</type>");
+        print("<kind>");
+        print(eKindToString(classSymbolTable_.kindOf(name)));
+        print("</kind>");
+        print("<index>");
+        print(std::to_string(classSymbolTable_.indexOf(name)));
+        print("</index>");
+    }
+    if (subroutineSymbolTable_.has(name))
+    {
+        print("<type>");
+        print(subroutineSymbolTable_.typeOf(name));
+        print("</type>");
+        print("<kind>");
+        print(eKindToString(subroutineSymbolTable_.kindOf(name)));
+        print("</kind>");
+        print("<index>");
+        print(std::to_string(subroutineSymbolTable_.indexOf(name)));
+        print("</index>");
+    }
+}
+
+Token CompilationEngine::process()
 {
     Token token = tokens_[pos_];
     printXML(token);
     pos_++;
+    return token;
 }
 
-void CompilationEngine::process(std::string str)
+Token CompilationEngine::process(std::string str)
 {
     Token token = tokens_[pos_];
     if (str == token.value)
@@ -76,9 +105,10 @@ void CompilationEngine::process(std::string str)
         throw "unexpected syntax:" + token.value + " should be " + str;
     }
     pos_++;
+    return token;
 }
 
-void CompilationEngine::process(eTokenType type)
+Token CompilationEngine::process(eTokenType type)
 {
     Token token = tokens_[pos_];
     if (type == token.type)
@@ -90,10 +120,12 @@ void CompilationEngine::process(eTokenType type)
         throw "unexpected syntax:" + std::to_string(type) + " should be " + std::to_string(type);
     }
     pos_++;
+    return token;
 }
 
-void CompilationEngine::processWhile(bool (*func)(Token))
+std::vector<Token> CompilationEngine::processWhile(bool (*func)(Token))
 {
+    std::vector<Token> tokens = {};
     do
     {
         Token t = peek();
@@ -101,6 +133,7 @@ void CompilationEngine::processWhile(bool (*func)(Token))
         {
             printXML(t);
             pos_++;
+            tokens.push_back(t);
         }
         else
         {
@@ -108,6 +141,7 @@ void CompilationEngine::processWhile(bool (*func)(Token))
         }
 
     } while (pos_ < tokens_.size());
+    return tokens;
 }
 
 void CompilationEngine::compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)())
@@ -203,7 +237,8 @@ void CompilationEngine::compileClass()
 {
     print("<class>");
     process("class");
-    process(eTokenType::Identifier);
+    Token classNameToken = process(eTokenType::Identifier);
+    className_ = classNameToken.value;
     process("{");
 
     auto isClassVarDec = [](Token t)
@@ -224,32 +259,59 @@ void CompilationEngine::compileClass()
 void CompilationEngine::compileClassVarDec()
 {
     print("<classVarDec>");
-    process(eTokenType::Keyword);    // (static|field)
-    process();                       // (type)
-    process(eTokenType::Identifier); // varName
-    processWhile(isNotSemiColon);    // (',' varName)*
+    Token kindToken = process(eTokenType::Keyword);               // (static|field)
+    Token typeToken = process();                                  // (type)
+    Token nameToken = process(eTokenType::Identifier);            // varName
+    std::vector<Token> nameTokens = processWhile(isNotSemiColon); // (',' varName)*
     process(";");
     print("</classVarDec>");
+
+    classSymbolTable_.define(nameToken.value, typeToken.value, SymbolTable::fromString(kindToken.value));
+    for (Token t : nameTokens)
+    {
+        if (t.type == eTokenType::Identifier)
+        {
+            classSymbolTable_.define(t.value, typeToken.value, SymbolTable::fromString(kindToken.value));
+        }
+    }
 }
 
 void CompilationEngine::compileSubroutine()
 {
     print("<subroutineDec>");
-    process(eTokenType::Keyword); // (constructor|function|method)
-    process();                    // (type)
-    process();                    // subroutineName
+    Token keywordToken = process(eTokenType::Keyword); // (constructor|function|method)
+    if (keywordToken.value == "method")
+    {
+        subroutineSymbolTable_.define("this", className_, eKind::ARG);
+    }
+    process(); // (type)
+    process(); // subroutineName
     process("(");
     compileParameterList();
     process(")");
     compileSubroutineBody();
     print("</subroutineDec>");
+    subroutineSymbolTable_.reset();
 }
 
 void CompilationEngine::compileParameterList()
 {
     print("<parameterList>");
-    processWhile(isNotClosing);
+    std::vector<Token> tokens = processWhile(isNotClosing);
     print("</parameterList>");
+
+    std::string type;
+    for (Token token : tokens)
+    {
+        if (token.type == eTokenType::Keyword)
+        {
+            type = token.value;
+        }
+        if (token.type == eTokenType::Identifier)
+        {
+            subroutineSymbolTable_.define(token.value, type, eKind::ARG);
+        }
+    }
 }
 
 void CompilationEngine::compileSubroutineBody()
@@ -269,11 +331,19 @@ void CompilationEngine::compileSubroutineBody()
 void CompilationEngine::compileVarDec()
 {
     print("<varDec>");
-    process("var");               // var
-    process();                    // (type)
-    processWhile(isNotSemiColon); // varName(',', varName)*
-    process(";");                 // ;
+    process("var");                                               // var
+    Token typeToken = process();                                  // (type)
+    std::vector<Token> nameTokens = processWhile(isNotSemiColon); // varName(',', varName)*
+    process(";");                                                 // ;
     print("</varDec>");
+
+    for (Token t : nameTokens)
+    {
+        if (t.type == eTokenType::Identifier)
+        {
+            subroutineSymbolTable_.define(t.value, typeToken.value, eKind::VAR);
+        }
+    }
 }
 
 void CompilationEngine::compileStatements()
@@ -374,6 +444,10 @@ void CompilationEngine::compileExpression()
     print("</expression>");
 }
 
+void printSymbol(SymbolTable table, std::string name)
+{
+}
+
 void CompilationEngine::compileTerm()
 {
     print("<term>");
@@ -395,7 +469,7 @@ void CompilationEngine::compileTerm()
     }
     else
     {
-        process();
+        Token t = process();
         Token s = peek();
         if (s.value == "[")
         {
@@ -403,6 +477,7 @@ void CompilationEngine::compileTerm()
             compileExpression();
             process("]");
         }
+        printSymbol(t.value);
     }
     print("</term>");
 }

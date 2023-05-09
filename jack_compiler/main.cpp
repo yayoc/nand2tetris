@@ -69,7 +69,7 @@ std::string apend_t(const std::string &input_file_path)
     }
 
     std::string new_path = input_file_path.substr(0, last_dot);
-    new_path += ".xml";
+    new_path += "TT.xml";
     return new_path;
 }
 
