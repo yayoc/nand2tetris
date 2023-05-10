@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#include "symbol_table.h"
+
 enum eSegment
 {
     CONSTANT,
@@ -42,6 +44,7 @@ public:
     void writeFunction(std::string name, int nArgs);
     void writeReturn();
     void close();
+    static eSegment kindToSegment(eKind kind);
 
 private:
     std::ofstream &output_;

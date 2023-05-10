@@ -101,3 +101,19 @@ void VMWriter::close()
 {
     output_.close();
 }
+
+eSegment VMWriter::kindToSegment(eKind kind)
+{
+    switch (kind)
+    {
+    case eKind::ARG:
+        return eSegment::ARGUMENT;
+    case eKind::FIELD:
+        return eSegment::THIS;
+    case eKind::STATIC:
+        return eSegment::kSTATIC;
+    case eKind::VAR:
+        return eSegment::LOCAL;
+    }
+    return eSegment();
+}

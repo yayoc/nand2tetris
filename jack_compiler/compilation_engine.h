@@ -15,7 +15,10 @@ private:
     SymbolTable classSymbolTable_;
     SymbolTable subroutineSymbolTable_;
     std::string className_;
+    std::string subroutineName_;
     int pos_;
+    int whileI_;
+    int ifI_;
     void print(std::string);
     void printXML(Token);
     void printSymbol(std::string);
@@ -36,6 +39,8 @@ public:
         pos_ = 0;
         classSymbolTable_ = SymbolTable();
         subroutineSymbolTable_ = SymbolTable();
+        whileI_ = 0;
+        ifI_ = 0;
     };
     void compileClass();
     void compileClassVarDec();
