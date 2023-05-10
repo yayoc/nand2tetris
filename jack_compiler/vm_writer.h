@@ -8,7 +8,7 @@ enum eSegment
     CONSTANT,
     ARGUMENT,
     LOCAL,
-    STATIC,
+    kSTATIC,
     THIS,
     THAT,
     POINTER,

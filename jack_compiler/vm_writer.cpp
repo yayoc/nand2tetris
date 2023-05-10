@@ -10,7 +10,7 @@ std::string eSegementToString(eSegment segment)
         return "constant";
     case eSegment::LOCAL:
         return "local";
-    case eSegment::STATIC:
+    case eSegment::kSTATIC:
         return "static";
     case eSegment::THIS:
         return "this";

@@ -6,11 +6,12 @@
 #include "jack_tokenizer.h"
 #include "token.h"
 #include "symbol_table.h"
+#include "vm_writer.h"
 class CompilationEngine
 {
 private:
-    std::ofstream &output_;
     std::vector<Token> tokens_;
+    VMWriter writer_;
     SymbolTable classSymbolTable_;
     SymbolTable subroutineSymbolTable_;
     std::string className_;
@@ -22,7 +23,7 @@ private:
     Token process(std::string);
     Token process(eTokenType);
     std::vector<Token> processWhile(bool (*func)(Token));
-    void compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)());
+    int compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)());
     void compileStatement();
     void compileExpressionWithComma();
     void compileTermWithOP();
@@ -30,7 +31,7 @@ private:
     Token peek(int n = 0);
 
 public:
-    CompilationEngine(std::vector<Token> tokens, std::ofstream &output) : tokens_(tokens), output_(output)
+    CompilationEngine(std::vector<Token> tokens, VMWriter &writer) : tokens_(tokens), writer_(writer)
     {
         pos_ = 0;
         classSymbolTable_ = SymbolTable();

@@ -58,24 +58,17 @@ public:
     }
 };
 
-std::string apend_t(const std::string &input_file_path)
-{
-    std::size_t last_dot = input_file_path.find_last_of('.');
-
-    if (last_dot == std::string::npos)
-    {
-        // No valid dot found for the file extension, return the original path
-        return input_file_path;
-    }
-
-    std::string new_path = input_file_path.substr(0, last_dot);
-    new_path += "TT.xml";
-    return new_path;
-}
-
 std::string get_output_file_path(const std::string &input_path)
 {
-    return apend_t(input_path);
+    std::filesystem::path file_path(input_path);
+
+    if (file_path.extension() == ".jack")
+    {
+        file_path.replace_extension(".vm");
+        return file_path.string();
+    }
+
+    return "";
 }
 
 std::vector<std::string> get_files_with_extension(const std::string &directory, const std::string &extension)
@@ -160,7 +153,9 @@ int main(int argc, char *argv[])
             tokens.push_back(token);
             tokenizer.advance();
         }
-        CompilationEngine engine = CompilationEngine(tokens, output);
+
+        VMWriter writer = VMWriter(output);
+        CompilationEngine engine = CompilationEngine(tokens, writer);
         engine.compileClass();
     }
 }

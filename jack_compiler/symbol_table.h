@@ -12,24 +12,6 @@ enum eKind
     VAR,
     NONE
 };
-
-static std::string eKindToString(eKind kind)
-{
-    switch (kind)
-    {
-    case eKind::STATIC:
-        return "static";
-    case eKind::FIELD:
-        return "field";
-    case eKind::ARG:
-        return "arg";
-    case eKind::VAR:
-        return "var";
-    default:
-        throw std::invalid_argument("invalid segment argument");
-    }
-};
-
 struct SymbolInfo
 {
     std::string type;

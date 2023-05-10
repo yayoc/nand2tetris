@@ -6,7 +6,7 @@
 
 void CompilationEngine::print(std::string str)
 {
-    output_ << str << std::endl;
+    std::cout << str << std::endl;
 }
 
 std::string escape(std::string str)
@@ -37,50 +37,22 @@ void CompilationEngine::printXML(Token token)
     switch (token.type)
     {
     case eTokenType::Keyword:
-        output_ << "<keyword> " + value + " </keyword>" << std::endl;
+        std::cout << "<keyword> " + value + " </keyword>" << std::endl;
         break;
     case eTokenType::Symbol:
-        output_ << "<symbol> " + value + " </symbol>" << std::endl;
+        std::cout << "<symbol> " + value + " </symbol>" << std::endl;
         break;
     case eTokenType::Identifier:
-        output_ << "<identifier> " + value + " </identifier>" << std::endl;
+        std::cout << "<identifier> " + value + " </identifier>" << std::endl;
         break;
     case eTokenType::IntConst:
-        output_ << "<integerConstant> " + value + " </integerConstant>" << std::endl;
+        std::cout << "<integerConstant> " + value + " </integerConstant>" << std::endl;
         break;
     case eTokenType::StringConst:
-        output_ << "<stringConstant> " + value + " </stringConstant>" << std::endl;
+        std::cout << "<stringConstant> " + value + " </stringConstant>" << std::endl;
         break;
     default:
         break;
-    }
-}
-
-void CompilationEngine::printSymbol(std::string name)
-{
-    if (classSymbolTable_.has(name))
-    {
-        print("<type>");
-        print(classSymbolTable_.typeOf(name));
-        print("</type>");
-        print("<kind>");
-        print(eKindToString(classSymbolTable_.kindOf(name)));
-        print("</kind>");
-        print("<index>");
-        print(std::to_string(classSymbolTable_.indexOf(name)));
-        print("</index>");
-    }
-    if (subroutineSymbolTable_.has(name))
-    {
-        print("<type>");
-        print(subroutineSymbolTable_.typeOf(name));
-        print("</type>");
-        print("<kind>");
-        print(eKindToString(subroutineSymbolTable_.kindOf(name)));
-        print("</kind>");
-        print("<index>");
-        print(std::to_string(subroutineSymbolTable_.indexOf(name)));
-        print("</index>");
     }
 }
 
@@ -144,20 +116,23 @@ std::vector<Token> CompilationEngine::processWhile(bool (*func)(Token))
     return tokens;
 }
 
-void CompilationEngine::compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)())
+int CompilationEngine::compileWhile(bool (*condition)(Token), void (CompilationEngine::*method)())
 {
+    int c = 0;
     while (true)
     {
         Token t = peek();
         if (condition(t))
         {
             (this->*method)();
+            c++;
         }
         else
         {
             break;
         }
     }
+    return c;
 }
 
 void CompilationEngine::compileStatement()
@@ -191,31 +166,50 @@ void CompilationEngine::compileExpressionWithComma()
     compileExpression();
 }
 
+static const std::unordered_map<std::string, eCommand> commands = {{"+", eCommand::ADD}, {"-", eCommand::NEG}, {"&", eCommand::AND}, {"|", eCommand::OR}, {"<", eCommand::LT}, {">", eCommand::GT}, {"=", eCommand::EQ}};
+
 void CompilationEngine::compileTermWithOP()
 {
-    process();
+    Token opToken = process(); // op
     compileTerm();
+    if (opToken.value == "*")
+    {
+        writer_.writeCall("Math.multiply", 2);
+    }
+    else if (opToken.value == "/")
+    {
+        writer_.writeCall("Math.divide", 2);
+    }
+    else
+    {
+        writer_.writeArithmetic(commands.at(opToken.value));
+    }
 }
 
 void CompilationEngine::compileSubroutineCall()
 {
     Token t = peek(1);
+    std::string subroutineName;
+    int c;
     if (t.value == "(")
     {
-        process(); // subroutineName;
+        Token subroutineNameToken = process(); // subroutineName;
+        subroutineName = subroutineNameToken.value;
         process("(");
-        compileExpressionList();
+        c = compileExpressionList();
         process(")");
     }
     else
     {
-        process(); // (className|varName);
+        Token objNameToken = process(); // (className|varName);
         process(".");
-        process(); // subroutineName;
+        Token subroutineNameToken = process(); // subroutineName;
+        subroutineName = objNameToken.value + "." + subroutineNameToken.value;
         process("(");
-        compileExpressionList();
+        c = compileExpressionList();
         process(")");
     }
+    writer_.writeCall(subroutineName, c);
 }
 
 Token CompilationEngine::peek(int n)
@@ -235,7 +229,6 @@ auto isNotClosing = [](Token t)
 
 void CompilationEngine::compileClass()
 {
-    print("<class>");
     process("class");
     Token classNameToken = process(eTokenType::Identifier);
     className_ = classNameToken.value;
@@ -253,7 +246,6 @@ void CompilationEngine::compileClass()
     };
     compileWhile(isSubroutine, &CompilationEngine::compileSubroutine);
     process("}");
-    print("</class>");
 }
 
 void CompilationEngine::compileClassVarDec()
@@ -284,11 +276,14 @@ void CompilationEngine::compileSubroutine()
     {
         subroutineSymbolTable_.define("this", className_, eKind::ARG);
     }
-    process(); // (type)
-    process(); // subroutineName
+    Token typeToken = process(); // (type)
+    Token nameToken = process(); // subroutineName
     process("(");
-    compileParameterList();
+    compileParameterList(); // update symbol table
     process(")");
+
+    writer_.writeFunction(className_ + "." + nameToken.value, subroutineSymbolTable_.varCount(eKind::ARG));
+
     compileSubroutineBody();
     print("</subroutineDec>");
     subroutineSymbolTable_.reset();
@@ -348,18 +343,15 @@ void CompilationEngine::compileVarDec()
 
 void CompilationEngine::compileStatements()
 {
-    print("<statements>");
     auto isStatement = [](Token t)
     {
         return t.value == "let" || t.value == "if" || t.value == "while" || t.value == "do" || t.value == "return";
     };
     compileWhile(isStatement, &CompilationEngine::compileStatement);
-    print("</statements>");
 }
 
 void CompilationEngine::compileLet()
 {
-    print("<letStatement>");
     process("let"); // let
     process();      // varName
     Token t = peek();
@@ -372,12 +364,10 @@ void CompilationEngine::compileLet()
     process("="); // =
     compileExpression();
     process(";"); // ;
-    print("</letStatement>");
 }
 
 void CompilationEngine::compileIf()
 {
-    print("<ifStatement>");
     process("if");       // if
     process("(");        // (
     compileExpression(); // expression
@@ -393,12 +383,10 @@ void CompilationEngine::compileIf()
         compileStatements(); // statements
         process("}");        // }
     }
-    print("</ifStatement>");
 }
 
 void CompilationEngine::compileWhile()
 {
-    print("<whileStatement>");
     process("while");
     process("(");
     compileExpression();
@@ -406,29 +394,30 @@ void CompilationEngine::compileWhile()
     process("{");
     compileStatements();
     process("}");
-    print("</whileStatement>");
 }
 
 void CompilationEngine::compileDo()
 {
-    print("<doStatement>");
     process("do");
     compileSubroutineCall();
     process(";");
-    print("</doStatement>");
+    writer_.writePop(eSegment::TEMP, 0);
 }
 
 void CompilationEngine::compileReturn()
 {
-    print("<returnStatement>");
     process("return");
     Token t = peek();
     if (t.value != ";")
     {
         compileExpression();
     }
+    else
+    {
+        writer_.writePush(eSegment::CONSTANT, 0); // push dummy value for void function
+    }
     process(";");
-    print("</returnStatement>");
+    writer_.writeReturn();
 }
 
 void CompilationEngine::compileExpression()
@@ -444,13 +433,8 @@ void CompilationEngine::compileExpression()
     print("</expression>");
 }
 
-void printSymbol(SymbolTable table, std::string name)
-{
-}
-
 void CompilationEngine::compileTerm()
 {
-    print("<term>");
     Token t = peek();
     if (t.value == "(") // ( expression )
     {
@@ -460,8 +444,16 @@ void CompilationEngine::compileTerm()
     }
     else if (t.value == "-" || t.value == "~") // (unaryOp term)
     {
-        process();
+        process(); // op
         compileTerm();
+        if (t.value == "-")
+        {
+            writer_.writeArithmetic(eCommand::NEG);
+        }
+        else if (t.value == "~")
+        {
+            writer_.writeArithmetic(eCommand::NOT);
+        }
     }
     else if (peek(1).value == "(" || peek(1).value == ".") // subroutineCall
     {
@@ -477,14 +469,23 @@ void CompilationEngine::compileTerm()
             compileExpression();
             process("]");
         }
-        printSymbol(t.value);
+
+        switch (t.type)
+        {
+        case eTokenType::Identifier:
+            break;
+        case eTokenType::IntConst:
+            writer_.writePush(eSegment::CONSTANT, std::stoi(t.value));
+            break;
+        default:
+            break;
+        }
     }
-    print("</term>");
 }
 
 int CompilationEngine::compileExpressionList()
 {
-    print("<expressionList>");
+    int count = 0;
     auto isExpression = [](Token t)
     {
         return t.type == eTokenType::IntConst || t.type == eTokenType::StringConst || t.type == eTokenType::Keyword || t.type == eTokenType::Identifier || t.value == "(" || t.value == "-" || t.value == "~";
@@ -492,15 +493,14 @@ int CompilationEngine::compileExpressionList()
     if (isExpression(peek()))
     {
         compileExpression();
+        count++;
         auto isComma = [](Token t)
         {
             return t.value == ",";
         };
 
-        compileWhile(isComma, &CompilationEngine::compileExpressionWithComma);
+        count += compileWhile(isComma, &CompilationEngine::compileExpressionWithComma);
     }
 
-    print("</expressionList>");
-
-    return 0;
+    return count;
 }
