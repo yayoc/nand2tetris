@@ -20,8 +20,6 @@ private:
     int whileI_;
     int ifI_;
     void print(std::string);
-    void printXML(Token);
-    void printSymbol(std::string);
     Token process();
     Token process(std::string);
     Token process(eTokenType);

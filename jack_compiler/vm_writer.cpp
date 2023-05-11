@@ -114,6 +114,8 @@ eSegment VMWriter::kindToSegment(eKind kind)
         return eSegment::kSTATIC;
     case eKind::VAR:
         return eSegment::LOCAL;
+    default:
+        break;
     }
     return eSegment();
 }

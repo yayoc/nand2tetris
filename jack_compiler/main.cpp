@@ -8,56 +8,6 @@
 #include "compilation_engine.h"
 #include "token.h"
 
-class Writer
-{
-private:
-    std::ofstream &output_;
-    std::string escape(std::string str)
-    {
-        if (str == "<")
-        {
-            return "&lt;";
-        }
-        if (str == ">")
-        {
-            return "&gt;";
-        }
-        if (str == "\"")
-        {
-            return "&quot;";
-        }
-        if (str == "&")
-        {
-            return "&amp;";
-        }
-
-        return str;
-    }
-
-public:
-    Writer(std::ofstream &output) : output_(output)
-    {
-    }
-    void writeTag(std::string tag)
-    {
-        output_ << "<" + tag + ">";
-    }
-    void writeEndTag(std::string tag)
-    {
-        output_ << "</" + tag + ">" << std::endl;
-    }
-    void writeToken(std::string type, std::string value)
-    {
-        writeTag(type);
-        output_ << " " + escape(value) + " ";
-        writeEndTag(type);
-    }
-    void writeNewLine()
-    {
-        output_ << std::endl;
-    }
-};
-
 std::string get_output_file_path(const std::string &input_path)
 {
     std::filesystem::path file_path(input_path);

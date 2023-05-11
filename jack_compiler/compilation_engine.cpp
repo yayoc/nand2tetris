@@ -9,57 +9,9 @@ void CompilationEngine::print(std::string str)
     std::cout << str << std::endl;
 }
 
-std::string escape(std::string str)
-{
-    if (str == "<")
-    {
-        return "&lt;";
-    }
-    if (str == ">")
-    {
-        return "&gt;";
-    }
-    if (str == "\"")
-    {
-        return "&quot;";
-    }
-    if (str == "&")
-    {
-        return "&amp;";
-    }
-
-    return str;
-}
-
-void CompilationEngine::printXML(Token token)
-{
-    std::string value = escape(token.value);
-    switch (token.type)
-    {
-    case eTokenType::Keyword:
-        std::cout << "<keyword> " + value + " </keyword>" << std::endl;
-        break;
-    case eTokenType::Symbol:
-        std::cout << "<symbol> " + value + " </symbol>" << std::endl;
-        break;
-    case eTokenType::Identifier:
-        std::cout << "<identifier> " + value + " </identifier>" << std::endl;
-        break;
-    case eTokenType::IntConst:
-        std::cout << "<integerConstant> " + value + " </integerConstant>" << std::endl;
-        break;
-    case eTokenType::StringConst:
-        std::cout << "<stringConstant> " + value + " </stringConstant>" << std::endl;
-        break;
-    default:
-        break;
-    }
-}
-
 Token CompilationEngine::process()
 {
     Token token = tokens_[pos_];
-    printXML(token);
     pos_++;
     return token;
 }
@@ -67,11 +19,7 @@ Token CompilationEngine::process()
 Token CompilationEngine::process(std::string str)
 {
     Token token = tokens_[pos_];
-    if (str == token.value)
-    {
-        printXML(token);
-    }
-    else
+    if (str != token.value)
     {
         std::cout << "unexpected syntax:" + token.value + " should be " + str << std::endl;
         throw "unexpected syntax:" + token.value + " should be " + str;
@@ -83,11 +31,7 @@ Token CompilationEngine::process(std::string str)
 Token CompilationEngine::process(eTokenType type)
 {
     Token token = tokens_[pos_];
-    if (type == token.type)
-    {
-        printXML(token);
-    }
-    else
+    if (type != token.type)
     {
         throw "unexpected syntax:" + std::to_string(type) + " should be " + std::to_string(type);
     }
@@ -103,7 +47,6 @@ std::vector<Token> CompilationEngine::processWhile(bool (*func)(Token))
         Token t = peek();
         if (func(t))
         {
-            printXML(t);
             pos_++;
             tokens.push_back(t);
         }
@@ -328,7 +271,6 @@ void CompilationEngine::compileVarDec()
     {
         if (t.type == eTokenType::Identifier)
         {
-            std::cout << "symbol table: " + t.value << std::endl;
             subroutineSymbolTable_.define(t.value, typeToken.value, eKind::VAR);
         }
     }
@@ -500,6 +442,9 @@ void CompilationEngine::compileTerm()
                 break;
             case eKind::VAR:
                 seg = eSegment::LOCAL;
+                break;
+            default:
+                seg = eSegment();
                 break;
             }
             index = subroutineSymbolTable_.indexOf(t.value);
