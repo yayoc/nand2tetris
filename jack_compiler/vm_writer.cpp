@@ -117,5 +117,6 @@ eSegment VMWriter::kindToSegment(eKind kind)
     default:
         break;
     }
-    return eSegment();
+
+    throw std::invalid_argument(kind + " can't be converted to segment");
 }

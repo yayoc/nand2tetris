@@ -109,7 +109,7 @@ void CompilationEngine::compileExpressionWithComma()
     compileExpression();
 }
 
-static const std::unordered_map<std::string, eCommand> commands = {{"+", eCommand::ADD}, {"-", eCommand::NEG}, {"&", eCommand::AND}, {"|", eCommand::OR}, {"<", eCommand::LT}, {">", eCommand::GT}, {"=", eCommand::EQ}};
+static const std::unordered_map<std::string, eCommand> commands = {{"+", eCommand::ADD}, {"-", eCommand::SUB}, {"&", eCommand::AND}, {"|", eCommand::OR}, {"<", eCommand::LT}, {">", eCommand::GT}, {"=", eCommand::EQ}};
 
 void CompilationEngine::compileTermWithOP()
 {
@@ -129,30 +129,23 @@ void CompilationEngine::compileTermWithOP()
     }
 }
 
-void CompilationEngine::compileSubroutineCall()
+void CompilationEngine::writeIdentifierPush(std::string name)
 {
-    Token t = peek(1);
-    std::string subroutineName;
-    int c;
-    if (t.value == "(")
+    if (subroutineSymbolTable_.has(name))
     {
-        Token subroutineNameToken = process(); // subroutineName;
-        subroutineName = subroutineNameToken.value;
-        process("(");
-        c = compileExpressionList();
-        process(")");
+        eSegment seg = VMWriter::kindToSegment(subroutineSymbolTable_.kindOf(name));
+        int index = subroutineSymbolTable_.indexOf(name);
+        writer_.writePush(seg, index);
+        return;
     }
-    else
+    else if (classSymbolTable_.has(name))
     {
-        Token objNameToken = process(); // (className|varName);
-        process(".");
-        Token subroutineNameToken = process(); // subroutineName;
-        subroutineName = objNameToken.value + "." + subroutineNameToken.value;
-        process("(");
-        c = compileExpressionList();
-        process(")");
+        eSegment seg = VMWriter::kindToSegment(classSymbolTable_.kindOf(name));
+        int index = classSymbolTable_.indexOf(name);
+        writer_.writePush(seg, index);
+        return;
     }
-    writer_.writeCall(subroutineName, c);
+    // throw std::invalid_argument(name + " should be found in symbol tables");
 }
 
 Token CompilationEngine::peek(int n)
@@ -170,23 +163,44 @@ auto isNotClosing = [](Token t)
     return t.value != ")";
 };
 
+auto isClassVarDec = [](Token t)
+{
+    return t.value == "static" || t.value == "field";
+};
+
+auto isSubroutine = [](Token t)
+{
+    return t.value == "constructor" || t.value == "function" || t.value == "method";
+};
+
+auto isVarDec = [](Token t)
+{
+    return t.value == "var";
+};
+
+auto isStatement = [](Token t)
+{
+    return t.value == "let" || t.value == "if" || t.value == "while" || t.value == "do" || t.value == "return";
+};
+
+auto isOP = [](Token t)
+{
+    static const std::unordered_set<std::string> operators = {"+", "-", "*", "/", "&", "|", "<", ">", "="};
+    return operators.find(t.value) != operators.end();
+};
+
+auto isExpression = [](Token t)
+{
+    return t.type == eTokenType::IntConst || t.type == eTokenType::StringConst || t.type == eTokenType::Keyword || t.type == eTokenType::Identifier || t.value == "(" || t.value == "-" || t.value == "~";
+};
+
 void CompilationEngine::compileClass()
 {
     process("class");
     Token classNameToken = process(eTokenType::Identifier);
     className_ = classNameToken.value;
     process("{");
-
-    auto isClassVarDec = [](Token t)
-    {
-        return t.value == "static" || t.value == "field";
-    };
     compileWhile(isClassVarDec, &CompilationEngine::compileClassVarDec);
-
-    auto isSubroutine = [](Token t)
-    {
-        return t.value == "constructor" || t.value == "function" || t.value == "method";
-    };
     compileWhile(isSubroutine, &CompilationEngine::compileSubroutine);
     process("}");
 }
@@ -199,11 +213,13 @@ void CompilationEngine::compileClassVarDec()
     std::vector<Token> nameTokens = processWhile(isNotSemiColon); // (',' varName)*
     process(";");
 
+    // update class symbol table
     classSymbolTable_.define(nameToken.value, typeToken.value, SymbolTable::fromString(kindToken.value));
     for (Token t : nameTokens)
     {
         if (t.type == eTokenType::Identifier)
         {
+            print("adding " + t.value + " to class symbol table " + ",type is " + typeToken.value + ",kind is " + kindToken.value);
             classSymbolTable_.define(t.value, typeToken.value, SymbolTable::fromString(kindToken.value));
         }
     }
@@ -212,11 +228,13 @@ void CompilationEngine::compileClassVarDec()
 void CompilationEngine::compileSubroutine()
 {
     subroutineSymbolTable_.reset();
+
     Token keywordToken = process(eTokenType::Keyword); // (constructor|function|method)
     if (keywordToken.value == "method")
     {
         subroutineSymbolTable_.define("this", className_, eKind::ARG);
     }
+
     Token typeToken = process(); // (type)
     Token nameToken = process(); // subroutineName
     process("(");
@@ -224,13 +242,14 @@ void CompilationEngine::compileSubroutine()
     process(")");
 
     subroutineName_ = nameToken.value;
+    subroutineKeyword_ = keywordToken.value;
+
     compileSubroutineBody();
 }
 
 void CompilationEngine::compileParameterList()
 {
     std::vector<Token> tokens = processWhile(isNotClosing);
-
     std::string type;
     for (Token token : tokens)
     {
@@ -248,14 +267,21 @@ void CompilationEngine::compileParameterList()
 void CompilationEngine::compileSubroutineBody()
 {
     process("{");
-    auto isVarDec = [](Token t)
-    {
-        return t.value == "var";
-    };
     compileWhile(isVarDec, &CompilationEngine::compileVarDec);
-
     // generate function code here
     writer_.writeFunction(className_ + "." + subroutineName_, subroutineSymbolTable_.varCount(eKind::VAR));
+    // constructor should allocate memory blocks
+    if (subroutineKeyword_ == "constructor")
+    {
+        writer_.writePush(eSegment::CONSTANT, classSymbolTable_.varCount(eKind::FIELD));
+        writer_.writeCall("Memory.alloc", 1);
+        writer_.writePop(eSegment::POINTER, 0);
+    }
+    if (subroutineKeyword_ == "method")
+    {
+        writer_.writePush(eSegment::ARGUMENT, 0);
+        writer_.writePop(eSegment::POINTER, 0);
+    }
 
     compileStatements();
     process("}");
@@ -267,6 +293,7 @@ void CompilationEngine::compileVarDec()
     Token typeToken = process();                                  // (type)
     std::vector<Token> nameTokens = processWhile(isNotSemiColon); // varName(',', varName)*
     process(";");                                                 // ;
+
     for (Token t : nameTokens)
     {
         if (t.type == eTokenType::Identifier)
@@ -278,10 +305,7 @@ void CompilationEngine::compileVarDec()
 
 void CompilationEngine::compileStatements()
 {
-    auto isStatement = [](Token t)
-    {
-        return t.value == "let" || t.value == "if" || t.value == "while" || t.value == "do" || t.value == "return";
-    };
+
     compileWhile(isStatement, &CompilationEngine::compileStatement);
 }
 
@@ -300,8 +324,18 @@ void CompilationEngine::compileLet()
     compileExpression();
     process(";"); // ;
 
-    eKind kind = subroutineSymbolTable_.kindOf(nameToken.value);
-    int index = subroutineSymbolTable_.indexOf(nameToken.value);
+    eKind kind;
+    int index;
+    if (subroutineSymbolTable_.has(nameToken.value))
+    {
+        kind = subroutineSymbolTable_.kindOf(nameToken.value);
+        index = subroutineSymbolTable_.indexOf(nameToken.value);
+    }
+    else if (classSymbolTable_.has(nameToken.value))
+    {
+        kind = classSymbolTable_.kindOf(nameToken.value);
+        index = classSymbolTable_.indexOf(nameToken.value);
+    }
     writer_.writePop(VMWriter::kindToSegment(kind), index);
 }
 
@@ -361,7 +395,7 @@ void CompilationEngine::compileWhile()
 void CompilationEngine::compileDo()
 {
     process("do");
-    compileSubroutineCall();
+    compileExpression();
     process(";");
     writer_.writePop(eSegment::TEMP, 0);
 }
@@ -385,11 +419,7 @@ void CompilationEngine::compileReturn()
 void CompilationEngine::compileExpression()
 {
     compileTerm();
-    auto isOP = [](Token t)
-    {
-        static const std::unordered_set<std::string> operators = {"+", "-", "*", "/", "&", "|", "<", ">", "="};
-        return operators.find(t.value) != operators.end();
-    };
+
     compileWhile(isOP, &CompilationEngine::compileTermWithOP);
 }
 
@@ -408,50 +438,102 @@ void CompilationEngine::compileTerm()
         compileTerm();
         if (t.value == "-")
         {
-            writer_.writeArithmetic(eCommand::NEG);
+            std::cout << "writing sub" << std::endl;
+            writer_.writeArithmetic(eCommand::SUB);
         }
         else if (t.value == "~")
         {
+            std::cout << "writing neg" << std::endl;
             writer_.writeArithmetic(eCommand::NOT);
         }
-    }
-    else if (peek(1).value == "(" || peek(1).value == ".") // subroutineCall
-    {
-        compileSubroutineCall();
     }
     else
     {
         Token t = process();
-        Token s = peek();
-        if (s.value == "[")
-        {
-            process("[");
-            compileExpression();
-            process("]");
-        }
-
         if (t.type == eTokenType::Identifier)
         {
-            int index;
-            eSegment seg;
-            eKind kind = subroutineSymbolTable_.kindOf(t.value);
-            switch (kind)
+            Token s = peek();
+            if (s.value == "[")
             {
-            case eKind::ARG:
-                seg = eSegment::ARGUMENT;
-                break;
-            case eKind::VAR:
-                seg = eSegment::LOCAL;
-                break;
-            default:
-                seg = eSegment();
-                break;
+                process("[");
+                compileExpression();
+                process("]");
             }
-            index = subroutineSymbolTable_.indexOf(t.value);
-            writer_.writePush(seg, index);
+            else if (s.value == "(")
+            {
+                // draw -> function
+                // dispose -> method
+                std::string subroutineName;
+                if (subroutineKeyword_ != "function")
+                {
+                    // push pointer
+                    writer_.writePush(eSegment::POINTER, 0);
+                    subroutineName = className_ + "." + t.value;
+                }
+                else
+                {
+                    subroutineName = t.value;
+                }
+                process("(");
+                int c = compileExpressionList();
+                // ???
+                if (subroutineKeyword_ != "function")
+                {
+                    c++; // object reference is pushed
+                }
+                process(")");
+                writer_.writeCall(subroutineName, c);
+            }
+            else if (s.value == ".")
+            {
+                // Memory.deAlloc -> OS API
+                // square.dispose -> obj.method
+
+                process(".");
+                Token subroutineNameToken = process(); // subroutineName;
+                std::string subroutineName;
+                bool hasObj = false;
+                if (subroutineSymbolTable_.has(t.value))
+                {
+                    std::string typeName = subroutineSymbolTable_.typeOf(t.value);
+                    subroutineName = typeName + "." + subroutineNameToken.value;
+                    writeIdentifierPush(t.value);
+                    hasObj = true;
+                }
+                else if (classSymbolTable_.has(t.value))
+                {
+                    std::string typeName = classSymbolTable_.typeOf(t.value);
+                    subroutineName = typeName + "." + subroutineNameToken.value;
+                    writeIdentifierPush(t.value);
+                    hasObj = true;
+                }
+                else
+                {
+                    subroutineName = t.value + "." + subroutineNameToken.value;
+                }
+                process("(");
+                int c = compileExpressionList();
+                if (hasObj)
+                {
+                    c++;
+                }
+                process(")");
+                writer_.writeCall(subroutineName, c);
+            }
+            else
+            {
+                writeIdentifierPush(t.value);
+            }
         }
         else if (t.type == eTokenType::Keyword)
         {
+            if (t.value == "this")
+            {
+                // ???
+                writer_.writePush(eSegment::POINTER, 0);
+                return;
+            }
+
             writer_.writePush(eSegment::CONSTANT, 0); // true
             if (t.value == "true")
             {
@@ -468,10 +550,6 @@ void CompilationEngine::compileTerm()
 int CompilationEngine::compileExpressionList()
 {
     int count = 0;
-    auto isExpression = [](Token t)
-    {
-        return t.type == eTokenType::IntConst || t.type == eTokenType::StringConst || t.type == eTokenType::Keyword || t.type == eTokenType::Identifier || t.value == "(" || t.value == "-" || t.value == "~";
-    };
     if (isExpression(peek()))
     {
         compileExpression();
@@ -480,7 +558,6 @@ int CompilationEngine::compileExpressionList()
         {
             return t.value == ",";
         };
-
         count += compileWhile(isComma, &CompilationEngine::compileExpressionWithComma);
     }
 

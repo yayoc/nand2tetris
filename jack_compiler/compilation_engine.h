@@ -16,6 +16,7 @@ private:
     SymbolTable subroutineSymbolTable_;
     std::string className_;
     std::string subroutineName_;
+    std::string subroutineKeyword_;
     int pos_;
     int whileI_;
     int ifI_;
@@ -28,7 +29,7 @@ private:
     void compileStatement();
     void compileExpressionWithComma();
     void compileTermWithOP();
-    void compileSubroutineCall();
+    void writeIdentifierPush(std::string name);
     Token peek(int n = 0);
 
 public:
