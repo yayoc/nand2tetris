@@ -314,15 +314,30 @@ void CompilationEngine::compileLet()
     process("let");              // let
     Token nameToken = process(); // varName
     Token t = peek();
+    bool isArray = false;
     if (t.value == "[")
     {
+        isArray = true;
+        // arr[i]
         process("[");        // [
-        compileExpression(); // expression
+        compileExpression(); // expression -> i
         process("]");        // ]
+
+        writeIdentifierPush(nameToken.value); // arr
+        writer_.writeArithmetic(eCommand::ADD);
     }
     process("="); // =
     compileExpression();
     process(";"); // ;
+
+    if (isArray)
+    {
+        writer_.writePop(eSegment::TEMP, 0);
+        writer_.writePop(eSegment::POINTER, 1);
+        writer_.writePush(eSegment::TEMP, 0);
+        writer_.writePop(eSegment::THAT, 0);
+        return;
+    }
 
     eKind kind;
     int index;
@@ -456,7 +471,15 @@ void CompilationEngine::compileTerm()
             if (s.value == "[")
             {
                 process("[");
+                // push arr
+                writeIdentifierPush(t.value);
                 compileExpression();
+                // add
+                writer_.writeArithmetic(eCommand::ADD);
+
+                writer_.writePop(eSegment::POINTER, 1);
+                writer_.writePush(eSegment::THAT, 0);
+
                 process("]");
             }
             else if (s.value == "(")
@@ -543,6 +566,17 @@ void CompilationEngine::compileTerm()
         else if (t.type == eTokenType::IntConst)
         {
             writer_.writePush(eSegment::CONSTANT, std::stoi(t.value));
+        }
+        else if (t.type == eTokenType::StringConst)
+        {
+            int length = t.value.length();
+            writer_.writePush(eSegment::CONSTANT, length);
+            writer_.writeCall("String.new", 1);
+            for (char c : t.value)
+            {
+                writer_.writePush(eSegment::CONSTANT, static_cast<int>(c));
+                writer_.writeCall("String.appendChar", 2);
+            }
         }
     }
 }
