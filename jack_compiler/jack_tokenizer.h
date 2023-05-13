@@ -2,6 +2,7 @@
 #define HEADER_JACK_TOKENIZER_H
 
 #include <string>
+#include <map>
 
 enum eTokenType
 {
@@ -12,6 +13,8 @@ enum eTokenType
     StringConst,
     TokenTypeUnknown
 };
+
+
 
 enum eKeyword
 {

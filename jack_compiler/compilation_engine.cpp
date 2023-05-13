@@ -21,7 +21,6 @@ Token CompilationEngine::process(std::string str)
     Token token = tokens_[pos_];
     if (str != token.value)
     {
-        std::cout << "unexpected syntax:" + token.value + " should be " + str << std::endl;
         throw "unexpected syntax:" + token.value + " should be " + str;
     }
     pos_++;
@@ -219,7 +218,6 @@ void CompilationEngine::compileClassVarDec()
     {
         if (t.type == eTokenType::Identifier)
         {
-            print("adding " + t.value + " to class symbol table " + ",type is " + typeToken.value + ",kind is " + kindToken.value);
             classSymbolTable_.define(t.value, typeToken.value, SymbolTable::fromString(kindToken.value));
         }
     }
@@ -247,19 +245,40 @@ void CompilationEngine::compileSubroutine()
     compileSubroutineBody();
 }
 
+std::map<eTokenType, std::string> TokenTypeString{
+    {eTokenType::Keyword, "KEYWORD"},
+    {eTokenType::Symbol, "SYMBOL"},
+    {eTokenType::Identifier, "IDENTIFIER"},
+    {eTokenType::IntConst, "INTCONST"},
+    {eTokenType::StringConst, "STRINGCONST"},
+    {eTokenType::TokenTypeUnknown, "UNKNOWN"},
+};
+
+std::string toString(eTokenType type)
+{
+    return TokenTypeString[type];
+}
+
 void CompilationEngine::compileParameterList()
 {
     std::vector<Token> tokens = processWhile(isNotClosing);
     std::string type;
+    bool isType = true;
     for (Token token : tokens)
     {
-        if (token.type == eTokenType::Keyword)
+        if (token.type == eTokenType::Symbol)
+        {
+            continue;
+        }
+        if (isType)
         {
             type = token.value;
+            isType = false;
         }
-        if (token.type == eTokenType::Identifier)
+        else
         {
             subroutineSymbolTable_.define(token.value, type, eKind::ARG);
+            isType = true;
         }
     }
 }
@@ -453,12 +472,10 @@ void CompilationEngine::compileTerm()
         compileTerm();
         if (t.value == "-")
         {
-            std::cout << "writing sub" << std::endl;
             writer_.writeArithmetic(eCommand::SUB);
         }
         else if (t.value == "~")
         {
-            std::cout << "writing neg" << std::endl;
             writer_.writeArithmetic(eCommand::NOT);
         }
     }
@@ -472,8 +489,8 @@ void CompilationEngine::compileTerm()
             {
                 process("[");
                 // push arr
-                writeIdentifierPush(t.value);
                 compileExpression();
+                writeIdentifierPush(t.value);
                 // add
                 writer_.writeArithmetic(eCommand::ADD);
 
@@ -554,6 +571,11 @@ void CompilationEngine::compileTerm()
             {
                 // ???
                 writer_.writePush(eSegment::POINTER, 0);
+                return;
+            }
+            if (t.value == "null" || t.value == "false")
+            {
+                writer_.writePush(eSegment::CONSTANT, 0);
                 return;
             }
 
