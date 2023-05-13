@@ -472,7 +472,7 @@ void CompilationEngine::compileTerm()
         compileTerm();
         if (t.value == "-")
         {
-            writer_.writeArithmetic(eCommand::SUB);
+            writer_.writeArithmetic(eCommand::NEG);
         }
         else if (t.value == "~")
         {
