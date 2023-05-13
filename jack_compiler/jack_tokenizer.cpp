@@ -71,6 +71,11 @@ std::string JackTokenizer::consumeBlockComment()
     return str;
 }
 
+bool JackTokenizer::isEOF()
+{
+    return pos_ == input_.length() - 1;
+}
+
 std::string JackTokenizer::consumeWhile(bool (*func)(char))
 {
     std::string str;
@@ -86,7 +91,7 @@ std::string JackTokenizer::consumeWhile(bool (*func)(char))
         {
             break;
         }
-    } while (hasMoreTokens());
+    } while (!isEOF());
 
     return str;
 }
@@ -107,7 +112,7 @@ std::string JackTokenizer::consumeWhile(bool (*func)(char, char))
         {
             break;
         }
-    } while (hasMoreTokens());
+    } while (!isEOF());
 
     return str;
 }
@@ -154,7 +159,7 @@ JackTokenizer::JackTokenizer(std::string input_file_path)
 
 bool JackTokenizer::hasMoreTokens()
 {
-    return pos_ < input_.length();
+    return tokenType_ != eTokenType::TokenTypeUnknown;
 }
 
 bool isSymbol(char c)
@@ -214,6 +219,10 @@ void JackTokenizer::advance()
         }
 
         tokenVal_ = str;
+    }
+    else
+    {
+        tokenType_ = eTokenType::TokenTypeUnknown;
     }
 }
 

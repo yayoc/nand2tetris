@@ -56,6 +56,7 @@ private:
     std::string consumeSpace();
     std::string consumeInlineComment();
     std::string consumeBlockComment();
+    bool isEOF();
 
 public:
     JackTokenizer(std::string input_file_path);

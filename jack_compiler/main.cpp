@@ -63,15 +63,14 @@ int main(int argc, char *argv[])
 
     for (const auto &file : jack_files)
     {
-        JackTokenizer tokenizer = JackTokenizer(file);
-        tokenizer.advance();
-
         std::string output_file_path = get_output_file_path(file);
         std::cout << "input file: " << file << std::endl;
         std::cout << "output file: " << output_file_path << std::endl;
         std::ofstream output(output_file_path);
-        std::vector<Token> tokens = {};
 
+        std::vector<Token> tokens = {};
+        JackTokenizer tokenizer = JackTokenizer(file);
+        tokenizer.advance();
         while (tokenizer.hasMoreTokens())
         {
             Token token;
