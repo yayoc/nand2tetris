@@ -80,7 +80,7 @@ class Keyboard {
                 return str;
             }
             if (c = 129) {
-                if (str.length > 0) {
+                if (str.length() > 0) {
                     do str.eraseLastChar();
                 }
             } else {
@@ -114,13 +114,13 @@ class Keyboard {
                     do str.eraseLastChar();
                     do Output.backSpace();
                 } else {
-                    return str.intVal();
+                    return str.intValue();
                 }
             } else {
                 let str = str.appendChar(c);
             }
         }
 
-        return str.intVal();
+        return str.intValue();
     }
 }
